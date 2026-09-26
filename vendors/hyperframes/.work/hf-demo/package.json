@@ -1,8 +1,0 @@
-{
-  "name": "content-engine-hyperframes-render",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "render": "npx --yes hyperframes render"
-  }
-}

@@ -1,7 +1,7 @@
 # rumpun.yaml — campaign-level config. Season-level config lives in seasons/s<N>.yaml.
 schema: 1
 campaign:
-  goal: "Build content_engine: framework-agnostic YAML-template video platform. Templates (education, community) feed one canonical project YAML; vendors/<engine>/AGENTS.md is the engine contract agents consume. First vendor: remotion (ported from nyanko3141592/remotion-voicevox-template)."
+  goal: "Build content_engine: framework-agnostic YAML-template video platform. Templates (education, community) feed one canonical project YAML; vendors/<engine>/AGENTS.md is the engine contract agents consume. First vendor: remotion."
   metric: "E2E: ce.py init education demo -> fill project.yaml -> ce.py render projects/demo -> mp4 via vendors/remotion with no manual fixes."
 autonomy:
   stage: manual

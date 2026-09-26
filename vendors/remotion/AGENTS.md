@@ -80,7 +80,7 @@ workdir, durations from the manifest, build log names the engines;
   background. Errors, never silent drops: unknown settings keys, unknown
   `vendor.remotion` keys, unknown characters, missing asset files.
 
-## Port changes vs upstream (nyanko3141592/remotion-voicevox-template)
+## Port changes vs upstream
 
 - Characters are data-driven: `sync-script.ts` emits `CHARACTERS` +
   `characterColors` from characters.yaml; `Main.tsx` maps over them;

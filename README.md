@@ -11,7 +11,8 @@ Framework-agnostic video template platform: fill one YAML, get a video.
   kraft-paper, batik, notebook, sunrise, studio, riverbank, slate,
   wood-table). Pick one with `settings.background`; or drop your own
   `assets/background.png` into the project.
-- Video engines live under `vendors/<engine>/`, each with an AGENTS.md
+- Video engines live under `vendors/<engine>/` (remotion, hyperframes),
+  each with an AGENTS.md
   manual and a `build.sh PROJECT_DIR OUT_DIR` entry. The platform contract
   is the root `AGENTS.md`.
 

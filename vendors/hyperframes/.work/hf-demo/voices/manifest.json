@@ -1,0 +1,37 @@
+{
+  "lines": {
+    "01_momo.wav": {
+      "hash": "1162ef93cdbd",
+      "seconds": 3.831,
+      "engine": "revolab"
+    },
+    "02_momo.wav": {
+      "hash": "e364ca2ee00a",
+      "seconds": 2.278,
+      "engine": "revolab"
+    },
+    "03_momo.wav": {
+      "hash": "f8337b3c7da9",
+      "seconds": 3.494,
+      "engine": "revolab"
+    },
+    "04_momo.wav": {
+      "hash": "42ac04c53197",
+      "seconds": 2.745,
+      "engine": "revolab"
+    },
+    "05_momo.wav": {
+      "hash": "31bb0804eaef",
+      "seconds": 2.498,
+      "engine": "revolab"
+    },
+    "06_momo.wav": {
+      "hash": "ba2956abfd11",
+      "seconds": 1.401,
+      "engine": "revolab"
+    }
+  },
+  "engines": [
+    "revolab"
+  ]
+}

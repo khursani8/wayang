@@ -1,4 +1,4 @@
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, Sequence, staticFile, Loop } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, Sequence, staticFile, Loop, Img } from "remotion";
 import { loadFont } from "@remotion/google-fonts/MPLUSRounded1c";
 import { scriptData, scenes, ScriptLine, bgmConfig, CHARACTERS } from "./data/script";
 import { COLORS } from "./config";
@@ -66,28 +66,17 @@ export const Main: React.FC = () => {
         fontFamily: "'Noto Sans JP', 'Hiragino Sans', sans-serif",
       }}
     >
-      {/* 黒板背景 */}
-      <div
+      {/* 黒板背景（合成画像: assets/background/generate_background.py）
+          プロジェクトの assets/background.png で上書き可能 */}
+      <Img
+        src={staticFile("background.png")}
         style={{
           position: "absolute",
-          top: 40,
-          left: 60,
-          right: 60,
-          bottom: 160,
-          background: COLORS.blackboard,
-          borderRadius: 8,
-        }}
-      />
-      {/* 黒板の茶色フチ（下部） */}
-      <div
-        style={{
-          position: "absolute",
-          left: 60,
-          right: 60,
-          bottom: 160,
-          height: 24,
-          background: COLORS.blackboardBorder,
-          borderRadius: "0 0 8px 8px",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
         }}
       />
       {/* BGM再生 */}

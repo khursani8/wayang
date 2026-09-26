@@ -7,6 +7,11 @@ engine. The platform contract is in the root `AGENTS.md`.
 
 - Remotion renders React components frame by frame to mp4. Composition:
   `src/index.ts` -> `Root` -> `Main`. `npm run build` = sync + render.
+- Background: `engine/public/background.png` is a synthesized chalkboard
+  (generator: repo-root `assets/background/generate_background.py`, SVG
+  sources alongside). It replaces the old flat divs in Main.tsx. A project
+  can override it by shipping `assets/background.png`; project assets are
+  copied over the engine defaults during build.
 - Materials live under `engine/public/`: `voices/` (per-line wav),
   `images/<character_id>/` (mouth_open.png, mouth_close.png, optional
   `<emotion>_open.png`), `se/` (sound effects), `bgm/` (not wired: engine

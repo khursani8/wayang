@@ -1,4 +1,4 @@
-"""TTS providers for content_engine.
+"""TTS providers for Wayang.
 
 The repo owns no services. Every engine is an API client the user points at
 their own endpoint or a hosted API.

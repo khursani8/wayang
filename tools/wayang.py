@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["pyyaml>=6.0", "jsonschema>=4.20", "pillow>=10.0"]
 # ///
-"""content_engine CLI: templates, init, validate, render."""
+"""Wayang CLI: templates, init, validate, render."""
 import argparse
 import json
 import logging
@@ -86,7 +86,7 @@ def cmd_init(args):
     shutil.copytree(src, dst)
     (dst / "template.yaml").rename(dst / "project.yaml")
     log.info(
-        "created projects/%s - edit project.yaml, then: uv run tools/ce.py validate projects/%s",
+        "created projects/%s - edit project.yaml, then: uv run tools/wayang.py validate projects/%s",
         args.name,
         args.name,
     )
@@ -125,7 +125,7 @@ def cmd_init_series(args):
     shutil.copytree(src, ep_dir)
     (ep_dir / "template.yaml").rename(ep_dir / "project.yaml")
     log.info(
-        "series projects/%s: series.yaml + episodes/%s (add more: ce.py init %s <series>/episodes/<ep>)",
+        "series projects/%s: series.yaml + episodes/%s (add more: wayang.py init %s <series>/episodes/<ep>)",
         args.name,
         args.first_episode,
         args.template,
@@ -495,7 +495,7 @@ def cmd_check(args):
     if args.json:
         print(json.dumps({"ready": not issues, "issues": issues, "notes": notes}))
     if issues:
-        log.warning("NOT READY: %d item(s) to fill above - then: ce.py validate && ce.py render", len(issues))
+        log.warning("NOT READY: %d item(s) to fill above - then: wayang.py validate && wayang.py render", len(issues))
         raise SystemExit(1)
     if notes:
         log.warning("READY with %d note(s) - see NOTE lines above", len(notes))
@@ -508,7 +508,7 @@ def cmd_lint(args):
     data = validate_project(pdir)
     mp4 = pdir / "out" / "video.mp4"
     if not mp4.is_file():
-        fail(f"no render found at {mp4} - run ce.py render first")
+        fail(f"no render found at {mp4} - run wayang.py render first")
     lint_project(pdir, mp4, data)
 
 
@@ -549,7 +549,7 @@ def cmd_render(args):
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(prog="ce", description="content_engine CLI")
+    parser = argparse.ArgumentParser(prog="wayang", description="Wayang CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("templates", help="list templates")

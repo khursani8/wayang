@@ -1,4 +1,4 @@
-// Video settings and palette for the remotion engine (content_engine port).
+// Video settings and palette for the remotion engine (Wayang port).
 export const VIDEO_CONFIG = {
   width: 1920,
   height: 1080,

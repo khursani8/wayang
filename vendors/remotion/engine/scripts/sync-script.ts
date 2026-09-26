@@ -87,7 +87,7 @@ function main() {
   const characterIds = Object.keys(characters);
   const characterIdType = characterIds.map(id => `"${id}"`).join(" | ");
 
-  // content_engine: data-driven character export
+  // Wayang: data-driven character export
   const charsData = characterIds.map((id) => ({
     id,
     name: characters[id].name,
@@ -174,7 +174,7 @@ export const scenes: SceneInfo[] = [
   { id: 3, title: "Ending", background: "gradient" },
 ];
 
-// content_engine: data-driven character definitions
+// Wayang: data-driven character definitions
 export const CHARACTERS: { id: CharacterId; name: string; position: "left" | "right"; color: string; flipX: boolean }[] = ${JSON.stringify(charsData, null, 2)};
 
 export const characterColors: Record<string, string> = ${JSON.stringify(

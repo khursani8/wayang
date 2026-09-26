@@ -310,7 +310,7 @@ tl.seek(0);
 
 fs.writeFileSync(path.join(workDir, "index.html"), html);
 fs.writeFileSync(path.join(workDir, "package.json"), JSON.stringify({
-  name: "content-engine-hyperframes-render",
+  name: "wayang-render",
   private: true,
   type: "module",
   scripts: { render: "npx --yes hyperframes render" },

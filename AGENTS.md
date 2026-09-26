@@ -1,7 +1,7 @@
-# content_engine — agent manual
+# Wayang — agent manual
 
 Framework-agnostic video generation. Templates named by format
-(dialog, presentation, storytelling, community). Agents drive `tools/ce.py`;
+(dialog, presentation, storytelling, community). Agents drive `tools/wayang.py`;
 humans fill one YAML per video. Malaysian identity: Momo and Kiki mascots,
 Bahasa Malaysia content.
 
@@ -13,20 +13,20 @@ Bahasa Malaysia content.
     schema/project.schema.json   strict gate for project.yaml
     templates/<format>/          working skeletons: template.yaml + art
     vendors/<engine>/            AGENTS.md (deltas) + build.sh + mapper
-    tools/ce.py                  templates|init|init-series|check|validate|
+    tools/wayang.py                  templates|init|init-series|check|validate|
                                  tts|render|lint
     projects/<name>/             your filled YAML + assets (gitignored)
     assets/                      art generator sources (mascots, backgrounds)
 
 ## Workflow
 
-1. `uv run tools/ce.py templates`
-2. `uv run tools/ce.py init <format> <name>`
-3. `uv run tools/ce.py check projects/<name>` — plain-words preflight; relay
+1. `uv run tools/wayang.py templates`
+2. `uv run tools/wayang.py init <format> <name>`
+3. `uv run tools/wayang.py check projects/<name>` — plain-words preflight; relay
    FILL items to the user before writing more YAML
 4. edit `projects/<name>/project.yaml`
-5. `uv run tools/ce.py validate projects/<name>` — strict gate
-6. `uv run tools/ce.py render projects/<name>` — TTS + vendor build +
+5. `uv run tools/wayang.py validate projects/<name>` — strict gate
+6. `uv run tools/wayang.py render projects/<name>` — TTS + vendor build +
    visibility lint in one command (`--skip-lint` escapes)
 
 ## Invariants

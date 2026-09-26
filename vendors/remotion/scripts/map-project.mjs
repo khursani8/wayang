@@ -83,7 +83,7 @@ for (const section of Object.keys(settings)) {
 // ---- characters -> config/characters.yaml ----
 const engineCharacters = {};
 for (const [id, c] of Object.entries(chars)) {
-  // Voice engine validation is the platform's job (tools/ce.py via the
+  // Voice engine validation is the platform's job (tools/wayang.py via the
   // provider registry). The vendor consumes project voices regardless of
   // which engine produced them.
   engineCharacters[id] = {

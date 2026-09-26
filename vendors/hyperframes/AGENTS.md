@@ -1,6 +1,6 @@
 # vendors/hyperframes — engine manual (AGENTS.md)
 
-HyperFrames vendor for content_engine: HTML/CSS compositions rendered
+HyperFrames vendor for Wayang: HTML/CSS compositions rendered
 deterministically by the HyperFrames CLI. The shared interface is
 docs/vendor-contract.md; this file holds hyperframes-specific deltas only.
 

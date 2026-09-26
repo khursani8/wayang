@@ -1,7 +1,7 @@
 {
-  "name": "content-engine-remotion",
+  "name": "wayang-remotion",
   "version": "1.0.0",
-  "description": "content_engine remotion renderer",
+  "description": "Wayang remotion renderer",
   "scripts": {
     "start": "npm run sync && remotion studio src/index.ts",
     "build": "npm run sync && remotion render src/index.ts Main out/video.mp4",

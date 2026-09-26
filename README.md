@@ -1,4 +1,4 @@
-# content_engine
+# Wayang
 
 Framework-agnostic video template platform: fill one YAML, get a video.
 
@@ -27,12 +27,12 @@ Framework-agnostic video template platform: fill one YAML, get a video.
 
 ## Quickstart
 
-    uv run tools/ce.py templates
-    uv run tools/ce.py init dialog my-video
+    uv run tools/wayang.py templates
+    uv run tools/wayang.py init dialog my-video
     # edit projects/my-video/project.yaml (characters, script, settings)
-    uv run tools/ce.py check projects/my-video      # what to fill, in plain words
-    uv run tools/ce.py validate projects/my-video
-    REVOLAB_API_KEY=... uv run tools/ce.py render projects/my-video
+    uv run tools/wayang.py check projects/my-video      # what to fill, in plain words
+    uv run tools/wayang.py validate projects/my-video
+    REVOLAB_API_KEY=... uv run tools/wayang.py render projects/my-video
 
 Output: `projects/<name>/out/video.mp4`.
 
@@ -40,23 +40,23 @@ Output: `projects/<name>/out/video.mp4`.
 
 The repo owns no services. TTS engines are API clients you configure:
 `revolab` (needs REVOLAB_API_KEY; default model nada-1.0-pro, voice ids
-from GET /v1/voices) and `openai` (needs OPENAI_API_KEY). `ce.py tts` writes one wav per script line into
+from GET /v1/voices) and `openai` (needs OPENAI_API_KEY). `wayang.py tts` writes one wav per script line into
 `projects/<name>/voices/`; renders reuse cached lines, prefer those files,
 then estimates. New engines: add a provider class in
 `tools/tts_providers.py` plus the schema enum.
 
 ## Series
 
-    uv run tools/ce.py init-series my-series --template dialog
+    uv run tools/wayang.py init-series my-series --template dialog
 
 creates `projects/my-series/series.yaml` (shared characters and settings)
 plus the first episode. Episodes inherit from series.yaml and override per
 key. Render every episode in order with
-`uv run tools/ce.py render projects/my-series`.
+`uv run tools/wayang.py render projects/my-series`.
 
 ## How a render runs
 
-`ce.py` validates the project against `schema/project.schema.json`,
+`wayang.py` validates the project against `schema/project.schema.json`,
 generates cached voices, then dispatches to the vendor's `build.sh`, which
 maps the YAML to engine inputs and renders. The build log labels the audio
 source, and a duration guard fails the build if the rendered length drifts

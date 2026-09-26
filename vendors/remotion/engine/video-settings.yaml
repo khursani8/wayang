@@ -1,4 +1,4 @@
-# Engine sample styling. content_engine projects get this generated from
+# Engine sample styling. Wayang projects get this generated from
 # their project.yaml settings by vendors/remotion/scripts/map-project.mjs.
 font:
   family: "M PLUS Rounded 1c"

@@ -18,19 +18,19 @@ seconds everywhere; vendors convert to their own units.
 
 ## What you must fill
 
-Start from a template (`ce.py init`) - everything else is optional but
+Start from a template (`wayang.py init`) - everything else is optional but
 sensible defaults exist. The parts that are yours:
 
 1. `meta.title`.
 2. Per character: name and voice (revolab voice_id, or openai voice).
 3. The script lines (text, speaker, pauses, optional visual cards).
 
-`ce.py check projects/<name>` reports every gap in plain words before you
-render. `ce.py validate` is the strict gate.
+`wayang.py check projects/<name>` reports every gap in plain words before you
+render. `wayang.py validate` is the strict gate.
 
 ## Series
 
-`ce.py init-series my-series --template dialog` creates
+`wayang.py init-series my-series --template dialog` creates
 `projects/<series>/series.yaml` (shared characters and settings) plus the
 first episode. Episodes deep-merge the series file under their own project
 (the episode wins per key); `render projects/<series>` renders every

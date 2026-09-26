@@ -58,7 +58,7 @@ export const scenes: SceneInfo[] = [
   { id: 3, title: "Ending", background: "gradient" },
 ];
 
-// content_engine: data-driven character definitions
+// Wayang: data-driven character definitions
 export const CHARACTERS: { id: CharacterId; name: string; position: "left" | "right"; color: string; flipX: boolean }[] = [
   {
     "id": "momo",

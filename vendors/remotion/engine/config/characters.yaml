@@ -1,5 +1,5 @@
 # Character settings for the standalone engine sample.
-# content_engine projects define characters in their own project.yaml.
+# Wayang projects define characters in their own project.yaml.
 momo:
   name: Momo
   position: right

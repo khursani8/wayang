@@ -1,6 +1,6 @@
 # Vendor contract
 
-What every video engine must provide to join content_engine. One file, so
+What every video engine must provide to join Wayang. One file, so
 vendor #3 onboards without copy-paste.
 
 ## The deal

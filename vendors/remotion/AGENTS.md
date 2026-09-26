@@ -1,6 +1,6 @@
 # vendors/remotion — engine manual (AGENTS.md)
 
-Remotion vendor for content_engine. Read this before touching the engine.
+Remotion vendor for Wayang. Read this before touching the engine.
 The shared interface (build.sh signature, outputs, guards) is
 docs/vendor-contract.md; this file holds remotion-specific deltas only.
 

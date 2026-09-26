@@ -59,7 +59,7 @@ the workdir is rebuilt from scratch every run.
 | script[].scene | script.yaml scene | 1..3 have named backgrounds; higher falls back |
 | script[].pause_after | script.yaml pauseAfter | seconds -> frames (x fps) |
 | script[].emotion | script.yaml emotion | normal, happy, surprised, thinking, sad |
-| script[].visual | script.yaml visual | type text/image/none, font_size->fontSize |
+| script[].visual | script.yaml visual | type text/image/none, font_size->fontSize; text cards get a dark outline by default, override with outline_color |
 | script[].se | script.yaml se | src relative to public/ |
 | settings.background | public/background.png | theme name from the catalog; project custom file wins |
 | settings.* | video-settings.yaml | snake_case -> camelCase, unknown keys error |

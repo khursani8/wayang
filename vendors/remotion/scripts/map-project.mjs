@@ -122,6 +122,7 @@ for (const line of script) {
     }
     if (line.visual.font_size) v.fontSize = line.visual.font_size;
     if (line.visual.color) v.color = line.visual.color;
+    if (line.visual.outline_color) v.outlineColor = line.visual.outline_color;
     if (line.visual.animation) v.animation = line.visual.animation;
     mapped.visual = v;
   }

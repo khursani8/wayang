@@ -415,6 +415,9 @@
                 "zoomIn",
                 "bounce"
               ]
+            },
+            "outline_color": {
+              "type": "string"
             }
           }
         },

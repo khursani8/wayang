@@ -132,6 +132,7 @@ export interface VisualContent {
   text?: string;
   fontSize?: number;
   color?: string;
+  outlineColor?: string;
   animation?: AnimationType;
 }
 

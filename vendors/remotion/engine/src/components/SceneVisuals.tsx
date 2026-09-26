@@ -106,7 +106,7 @@ export const SceneVisuals: React.FC<SceneVisualsProps> = ({
     );
   }
 
-  // テキスト表示
+  // テキスト表示（字幕と同じ縁取り: 明るい背景でも読める）
   if (visual.type === "text" && visual.text) {
     return (
       <div style={contentContainer}>
@@ -118,6 +118,8 @@ export const SceneVisuals: React.FC<SceneVisualsProps> = ({
             textAlign: "center",
             lineHeight: 1.4,
             whiteSpace: "pre-wrap",
+            WebkitTextStroke: `${Math.round((visual.fontSize || 64) * 0.16)}px ${visual.outlineColor || "#1F2937"}`,
+            paintOrder: "stroke fill",
           }}
         >
           {visual.text}

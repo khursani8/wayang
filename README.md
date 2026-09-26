@@ -17,6 +17,10 @@ Framework-agnostic video template platform. Fill one YAML, get a video.
 
 Output: `projects/<name>/out/video.mp4`.
 
-TTS uses VOICEVOX at localhost:50021 when it is running. Without VOICEVOX the
-render uses estimated timings and silent placeholder audio; the build log
-states which source was used. See `vendors/remotion/AGENTS.md`.
+The repo owns no services. TTS is API-based and user-configured:
+`voicevox` (your own endpoint, default localhost:50021, override with
+VOICEVOX_HOST) and `openai` (needs OPENAI_API_KEY). `ce.py tts` writes one
+wav per script line into `projects/<name>/voices/`; renders use those files
+when complete, VOICEVOX next, estimated timing with silent audio last. The
+build log states which source was used. New engines go in
+`tools/tts_providers.py` plus the schema enum.

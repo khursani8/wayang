@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cat > /tmp/patch-map-voices.mjs <<'EOF'\\nimport fs from \\\"node:fs\\\";\\nconst file = \\\"/mnt/data/work/content_engine/vendors/remotion/scripts/map-project.mjs\\\";\\nlet src = fs.readFileSync(fi...",
+  "error": "Exit code 1\nMISS: map-project tail anchor",
+  "timestamp": "2026-09-26T04:02:39.587Z",
+  "retry_count": 2
+}

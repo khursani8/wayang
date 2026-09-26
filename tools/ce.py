@@ -13,6 +13,7 @@ from pathlib import Path
 
 import yaml
 from jsonschema import Draft202012Validator
+from tts_providers import PROVIDERS, ProviderError, line_hash, wav_seconds
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = ROOT / "schema" / "project.schema.json"
@@ -108,6 +109,66 @@ def validate_project(pdir: Path) -> dict:
     return data
 
 
+def run_tts(pdir: Path, data: dict, force: bool = False) -> None:
+    """Write one wav per script line into pdir/voices. All-or-nothing per project."""
+    lines = data["script"]
+    chars = data["characters"]
+    voices_dir = pdir / "voices"
+    manifest_path = voices_dir / "manifest.json"
+    manifest = {"lines": {}, "engines": []}
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["lines"] = manifest.get("lines", {})
+
+    engines = sorted({chars[line["character"]]["voice"]["engine"] for line in lines})
+    unavailable = []
+    for engine in engines:
+        ok, why = PROVIDERS[engine].available()
+        if not ok:
+            unavailable.append(f"{engine}: {why}")
+    if unavailable:
+        for why in unavailable:
+            log.warning("TTS engine %s", why)
+        log.warning("no TTS this run: vendor renders with estimated timing and silent audio")
+        return
+
+    jobs = []
+    for line in lines:
+        cfg = chars[line["character"]]["voice"]
+        fname = f"{line['id']:02d}_{line['character']}.wav"
+        digest = line_hash(line["text"], cfg["engine"], PROVIDERS[cfg["engine"]].config_hash(cfg))
+        cached = manifest["lines"].get(fname)
+        if not force and cached and cached.get("hash") == digest and (voices_dir / fname).is_file():
+            continue
+        jobs.append((line, cfg, fname, digest))
+    if not jobs:
+        manifest["engines"] = sorted({v["engine"] for v in manifest["lines"].values()})
+        manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        log.info("TTS: all %d line voice(s) cached in %s", len(lines), voices_dir)
+        return
+
+    log.info("TTS: generating %d line voice(s) with %s", len(jobs), ", ".join(engines))
+    voices_dir.mkdir(parents=True, exist_ok=True)
+    for line, cfg, fname, digest in jobs:
+        out = voices_dir / fname
+        try:
+            PROVIDERS[cfg["engine"]].synthesize(line["text"], cfg, out)
+        except ProviderError as e:
+            log.error("TTS failed for %s: %s", fname, e)
+            raise SystemExit(1)
+        seconds = wav_seconds(out)
+        manifest["lines"][fname] = {"hash": digest, "seconds": round(seconds, 3), "engine": cfg["engine"]}
+        log.info("TTS %s: %.2fs (%s)", fname, seconds, cfg["engine"])
+    manifest["engines"] = sorted({v["engine"] for v in manifest["lines"].values()})
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def cmd_tts(args):
+    pdir = resolve_project(args.project)
+    data = validate_project(pdir)
+    run_tts(pdir, data, force=args.force)
+
+
 def cmd_validate(args):
     resolve_project(args.project)
     validate_project(resolve_project(args.project))
@@ -116,6 +177,7 @@ def cmd_validate(args):
 def cmd_render(args):
     pdir = resolve_project(args.project)
     data = validate_project(pdir)
+    run_tts(pdir, data)
     vendor = data["meta"]["vendor"]
     build = ROOT / "vendors" / vendor / "build.sh"
     out = pdir / "out"
@@ -142,6 +204,11 @@ def main():
     p = sub.add_parser("validate", help="validate a project")
     p.add_argument("project")
     p.set_defaults(func=cmd_validate)
+
+    p = sub.add_parser("tts", help="generate line voices via configured TTS engines")
+    p.add_argument("project")
+    p.add_argument("--force", action="store_true", help="regenerate even when cached")
+    p.set_defaults(func=cmd_tts)
 
     p = sub.add_parser("render", help="render a project via its vendor")
     p.add_argument("project")

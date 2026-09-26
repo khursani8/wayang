@@ -18,6 +18,12 @@ characters:
     voice:
       engine: voicevox
       speaker_id: 3
+    # OpenAI TTS example (needs OPENAI_API_KEY):
+    # voice:
+    #   engine: openai
+    #   voice: alloy
+    #   model: gpt-4o-mini-tts
+    #   speed: 1.0
   metan:
     name: 四国めたん
     color: "#FF1493"

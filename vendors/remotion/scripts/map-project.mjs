@@ -178,19 +178,50 @@ function silentWav(seconds) {
   return buf;
 }
 
-const voicesDir = path.join(workDir, "public", "voices");
-fs.mkdirSync(voicesDir, { recursive: true });
+const workVoices = path.join(workDir, "public", "voices");
+fs.mkdirSync(workVoices, { recursive: true });
 const durations = {};
-for (const line of engineScript) {
-  const visible = String(line.text).replace(/\s+/g, "").length;
-  const seconds = visible / (cps * playbackRate);
-  const frames = Math.max(24, Math.ceil((seconds * fps)));
-  const file = `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
-  durations[file] = frames;
-  fs.writeFileSync(path.join(voicesDir, file), silentWav(frames / fps));
+
+// ---- Priority 1: platform-generated voices in PROJECT_DIR/voices ----
+const projectVoices = path.join(projectDir, "voices");
+const manifestPath = path.join(projectVoices, "manifest.json");
+let platformEngines = null;
+if (fs.existsSync(manifestPath)) {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const entries = manifest.lines || {};
+  const fileName = (line) => `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
+  const missing = engineScript.filter(
+    (line) => !entries[fileName(line)] || !fs.existsSync(path.join(projectVoices, fileName(line)))
+  );
+  if (missing.length === 0) {
+    for (const line of engineScript) {
+      const f = fileName(line);
+      const seconds = Number(entries[f].seconds);
+      if (!Number.isFinite(seconds) || seconds <= 0) {
+        die(`voices/manifest.json: bad seconds for ${f}`);
+      }
+      fs.copyFileSync(path.join(projectVoices, f), path.join(workVoices, f));
+      durations[f] = Math.ceil(seconds * fps * playbackRate);
+    }
+    platformEngines = manifest.engines && manifest.engines.length ? manifest.engines : ["unknown"];
+    console.log(`[map-project] TTS source: ${platformEngines.join("+")} (platform-generated voices)`);
+  }
 }
-fs.writeFileSync(path.join(voicesDir, "durations.json"), JSON.stringify(durations, null, 2));
+
+// ---- Priority 2: estimate + silent placeholder wavs ----
+if (platformEngines === null) {
+  console.log("[map-project] TTS source: estimate (durations.json + silent placeholder wavs written)");
+  for (const line of engineScript) {
+    const visible = String(line.text).replace(/\s+/g, "").length;
+    const seconds = visible / (cps * playbackRate);
+    const frames = Math.max(24, Math.ceil(seconds * fps));
+    const f = `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
+    durations[f] = frames;
+    fs.writeFileSync(path.join(workVoices, f), silentWav(frames / fps));
+  }
+}
+fs.writeFileSync(path.join(workVoices, "durations.json"), JSON.stringify(durations, null, 2));
+fs.writeFileSync(path.join(workVoices, ".source"), platformEngines ? "platform" : "estimate");
 
 console.log(`[map-project] characters: ${charIds.join(", ")}`);
 console.log(`[map-project] lines: ${engineScript.length}, fps: ${fps}, playbackRate: ${playbackRate}, estimate_cps: ${cps}`);
-console.log("[map-project] TTS source: estimate (durations.json + silent placeholder wavs written)");

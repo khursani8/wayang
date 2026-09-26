@@ -38,13 +38,13 @@ node "$VENDOR_DIR/scripts/map-project.mjs" "$PROJECT_DIR" "$WORK"
 # Generate engine sources from the mapped configs
 (cd "$WORK" && npm run sync)
 
-# TTS: real VOICEVOX audio when reachable, otherwise keep estimates
-if curl -fsS --max-time 3 http://localhost:50021/version >/dev/null 2>&1; then
+# TTS priority: platform voices (marked by map-project) > VOICEVOX > estimates.
+# map-project already logs the actual source; only log again when voicevox runs.
+SOURCE_FILE="$WORK/public/voices/.source"
+SOURCE="$(cat "$SOURCE_FILE" 2>/dev/null || echo unknown)"
+if [ "$SOURCE" != "platform" ] && curl -fsS --max-time 3 http://localhost:50021/version >/dev/null 2>&1; then
   echo "[remotion-vendor] TTS source: voicevox"
   (cd "$WORK" && npx ts-node scripts/generate-voices.ts && npm run sync-script)
-else
-  echo "[remotion-vendor] TTS source: estimate (VOICEVOX not reachable at localhost:50021)"
-  echo "[remotion-vendor] audio: silent placeholder tracks, timing from character-count estimate"
 fi
 
 echo "[remotion-vendor] rendering..."

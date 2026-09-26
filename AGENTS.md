@@ -44,6 +44,26 @@ Every vendor ships:
    may warn+skip styling it supports no equivalent for, only if its AGENTS.md
    says so.
 
+## TTS providers (platform)
+
+The repo owns no services. TTS engines are API clients the user configures:
+
+- `voicevox`: your own VOICEVOX endpoint (default http://localhost:50021,
+  override with VOICEVOX_HOST).
+- `openai`: OpenAI text-to-speech API, needs OPENAI_API_KEY.
+
+`ce.py tts <project>` (also run by `ce.py render`) writes one wav per script
+line into `projects/<name>/voices/` plus `manifest.json` (hash, seconds,
+engine). Re-runs skip unchanged lines. Availability gate is all-or-nothing per
+project: if a configured engine has no key or is unreachable, the step warns
+and skips, and the vendor renders with estimated timing. An API error while
+credentials are present fails the run. Real TTS and silent estimates are
+never mixed in one timeline.
+
+Add a provider: implement it in `tools/tts_providers.py`, add the engine to
+the `voice.engine` enum in `schema/project.schema.json`, and cover its keys
+in a schema `if/then` branch.
+
 ## Agent workflow
 
 1. `uv run tools/ce.py templates` — list templates.

@@ -52,6 +52,12 @@ the workdir is rebuilt from scratch every run.
 
 ## Timing and audio honesty
 
+Priority order for line audio: (1) platform-generated voices in
+`PROJECT_DIR/voices/` with a manifest covering every line - copied into the
+workdir, durations from the manifest, build log names the engines;
+(2) VOICEVOX at localhost:50021 (upstream path); (3) estimate with silent
+placeholder wavs. Never mixed in one project.
+
 - With VOICEVOX up: real per-line wav files and measured frame durations.
   Build log says `TTS source: voicevox`.
 - Without VOICEVOX: `map-project.mjs` estimates frames from character count

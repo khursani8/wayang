@@ -58,5 +58,6 @@ key. Render every episode in order with
 generates cached voices, then dispatches to the vendor's `build.sh`, which
 maps the YAML to engine inputs and renders. The build log labels the audio
 source, and a duration guard fails the build if the rendered length drifts
-from the computed timeline. Details in `AGENTS.md` (agents) and
+from the computed timeline, and a visibility lint extracts frames to
+confirm every subtitle, card, character and voice is actually present. Details in `AGENTS.md` (agents) and
 `vendors/remotion/AGENTS.md` (the remotion engine).

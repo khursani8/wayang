@@ -100,6 +100,18 @@ Rules:
   the merged document to `.merged.yaml` beside project.yaml and the vendor
   reads that. Stale sidecars are removed before each render.
 
+## Visibility lint
+
+After every render, ce.py lints the rendered file itself: frames extracted
+at each line's midpoint must show subtitle ink in the subtitle band, the
+text card in the card region, character animation in its corner box, and
+real-voice lines must measure louder than -55 dB. An invisible or silent
+object fails the build. The layout contract it enforces: characters in the
+bottom corners (charH box, 40px inset), subtitle bottom-center within
+max_width_percent and at most 2 lines, text cards in the upper-center
+region. `ce.py lint <project>` re-runs it standalone; `render
+--skip-lint` escapes.
+
 ## Honesty rules
 
 - The build log always names the audio engines used, or `estimate`

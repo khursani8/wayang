@@ -17,6 +17,12 @@ Framework-agnostic video template platform. Fill one YAML, get a video.
 
 Output: `projects/<name>/out/video.mp4`.
 
+Series: `uv run tools/ce.py init-series my-series --template education`
+creates `projects/my-series/series.yaml` plus the first episode. Episodes
+inherit characters and settings from series.yaml and override per key.
+Render every episode in order with
+`uv run tools/ce.py render projects/my-series`.
+
 The repo owns no services. TTS is API-based and user-configured:
 `voicevox` (your own endpoint, default localhost:50021, override with
 VOICEVOX_HOST), `openai` (needs OPENAI_API_KEY) and `revolab` (needs

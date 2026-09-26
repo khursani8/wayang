@@ -15,6 +15,36 @@ import yaml
 from jsonschema import Draft202012Validator
 from tts_providers import PROVIDERS, ProviderError, line_hash, wav_seconds
 
+
+def deep_merge(base: dict, overlay: dict) -> dict:
+    """Overlay wins per key; dicts recurse; lists and scalars replace."""
+    out = dict(base)
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = deep_merge(out[key], value)
+        else:
+            out[key] = value
+    return out
+
+
+def find_series_file(pdir: Path):
+    """Nearest series.yaml above an episode dir (up to two levels)."""
+    for cand in (pdir.parent / "series.yaml", pdir.parent.parent / "series.yaml"):
+        if cand.is_file():
+            return cand
+    return None
+
+
+def is_series_dir(pdir: Path) -> bool:
+    return (pdir / "series.yaml").is_file() or (pdir / "episodes").is_dir()
+
+
+def series_episodes(sdir: Path) -> list:
+    epi = sdir / "episodes"
+    if not epi.is_dir():
+        return []
+    return sorted(d for d in epi.iterdir() if (d / "project.yaml").is_file())
+
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = ROOT / "schema" / "project.schema.json"
 log = logging.getLogger("ce")
@@ -50,12 +80,53 @@ def cmd_init(args):
     dst = ROOT / "projects" / args.name
     if dst.exists():
         fail(f"projects/{args.name} already exists")
+    dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(src, dst)
     (dst / "template.yaml").rename(dst / "project.yaml")
     log.info(
         "created projects/%s - edit project.yaml, then: uv run tools/ce.py validate projects/%s",
         args.name,
         args.name,
+    )
+
+
+def cmd_init_series(args):
+    src = ROOT / "templates" / args.template
+    if not (src / "template.yaml").is_file():
+        fail(f"unknown template: {args.template}")
+    sdir = ROOT / "projects" / args.name
+    if sdir.exists():
+        fail(f"projects/{args.name} already exists")
+    template = yaml.safe_load((src / "template.yaml").read_text(encoding="utf-8"))
+    (sdir / "episodes").mkdir(parents=True)
+    series = {
+        "meta": {
+            "title": template["meta"]["title"],
+            "template": args.template,
+            "vendor": template["meta"]["vendor"],
+            "language": template["meta"].get("language", "ja"),
+            "description": f"shared base for the {args.name} series; episodes inherit and override",
+        },
+        "characters": template.get("characters", {}),
+        "settings": template.get("settings", {}),
+    }
+    header = (
+        "# series.yaml - shared base for every episode in this series.\n"
+        "# Episodes deep-merge this under their own project.yaml:\n"
+        "# episode values win per key, dicts merge, lists (script) are episode-only.\n"
+        "# This file is a fragment: it is never validated on its own.\n"
+    )
+    (sdir / "series.yaml").write_text(
+        header + yaml.safe_dump(series, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+    ep_dir = sdir / "episodes" / args.first_episode
+    shutil.copytree(src, ep_dir)
+    (ep_dir / "template.yaml").rename(ep_dir / "project.yaml")
+    log.info(
+        "series projects/%s: series.yaml + episodes/%s (add more: ce.py init %s <series>/episodes/<ep>)",
+        args.name,
+        args.first_episode,
+        args.template,
     )
 
 
@@ -69,6 +140,17 @@ def load_project(pdir: Path) -> dict:
         fail(f"project.yaml parse error: {e}")
     if not isinstance(data, dict):
         fail("project.yaml must be a mapping")
+    series_file = find_series_file(pdir)
+    if series_file is not None:
+        try:
+            series = yaml.safe_load(series_file.read_text(encoding="utf-8"))
+        except yaml.YAMLError as e:
+            fail(f"series config parse error ({series_file}): {e}")
+        if not isinstance(series, dict):
+            fail(f"series config must be a mapping: {series_file}")
+        shared = len((series.get("characters") or {}).keys())
+        data = deep_merge(series, data)
+        log.info("merged series config %s (%d shared character(s))", series_file, shared)
     return data
 
 
@@ -165,18 +247,31 @@ def run_tts(pdir: Path, data: dict, force: bool = False) -> None:
 
 def cmd_tts(args):
     pdir = resolve_project(args.project)
-    data = validate_project(pdir)
-    run_tts(pdir, data, force=args.force)
+    targets = series_episodes(pdir) if is_series_dir(pdir) else [pdir]
+    for ep in targets:
+        log.info("tts %s", ep.name)
+        run_tts(ep, validate_project(ep), force=args.force)
 
 
 def cmd_validate(args):
-    resolve_project(args.project)
-    validate_project(resolve_project(args.project))
-
-
-def cmd_render(args):
     pdir = resolve_project(args.project)
+    targets = series_episodes(pdir) if is_series_dir(pdir) else [pdir]
+    for ep in targets:
+        log.info("validating %s", ep.name)
+        validate_project(ep)
+
+
+def render_one(pdir: Path) -> None:
     data = validate_project(pdir)
+    # The vendor consumes one canonical file. When series inheritance applied,
+    # materialize the merged doc so the vendor never needs to know about series.
+    merged_path = pdir / ".merged.yaml"
+    if find_series_file(pdir) is not None:
+        merged_path.write_text(
+            yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+        )
+    elif merged_path.exists():
+        merged_path.unlink()
     run_tts(pdir, data)
     vendor = data["meta"]["vendor"]
     build = ROOT / "vendors" / vendor / "build.sh"
@@ -186,6 +281,17 @@ def cmd_render(args):
     if proc.returncode != 0:
         fail(f"vendor build.sh exited {proc.returncode}")
     log.info("done: %s", out / "video.mp4")
+
+
+def cmd_render(args):
+    pdir = resolve_project(args.project)
+    targets = series_episodes(pdir) if is_series_dir(pdir) else [pdir]
+    if len(targets) > 1:
+        log.info(
+            "series: %d episode(s): %s", len(targets), ", ".join(t.name for t in targets)
+        )
+    for ep in targets:
+        render_one(ep)
 
 
 def main():
@@ -204,6 +310,12 @@ def main():
     p = sub.add_parser("validate", help="validate a project")
     p.add_argument("project")
     p.set_defaults(func=cmd_validate)
+
+    p = sub.add_parser("init-series", help="scaffold a series: series.yaml + first episode")
+    p.add_argument("name")
+    p.add_argument("--template", default="education")
+    p.add_argument("--first-episode", default="ep01")
+    p.set_defaults(func=cmd_init_series)
 
     p = sub.add_parser("tts", help="generate line voices via configured TTS engines")
     p.add_argument("project")

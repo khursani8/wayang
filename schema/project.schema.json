@@ -36,6 +36,15 @@
         },
         "description": {
           "type": "string"
+        },
+        "series": {
+          "type": "string"
+        },
+        "episode": {
+          "type": [
+            "integer",
+            "string"
+          ]
         }
       }
     },

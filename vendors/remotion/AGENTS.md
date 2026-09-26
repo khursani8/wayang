@@ -22,6 +22,9 @@ engine. The platform contract is in the root `AGENTS.md`.
 
     vendors/remotion/build.sh PROJECT_DIR OUT_DIR
 
+Input file: `.merged.yaml` when present (platform-materialized series
+inheritance), else `project.yaml`.
+
 Steps: fresh workdir at `vendors/remotion/.work/<project>/` (engine source
 copied, node_modules symlinked from `engine/`), project `assets/` copied into
 `public/`, `scripts/map-project.mjs` converts canonical project.yaml into the

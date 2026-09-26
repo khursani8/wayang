@@ -76,6 +76,30 @@ in a schema `if/then` branch.
 5. `uv run tools/ce.py render projects/<name>` — dispatches to
    `vendors/<vendor>/build.sh`, streams build output.
 
+## Series
+
+A series is a folder convention over projects:
+
+    projects/<series>/
+      series.yaml              optional shared base: meta, characters, settings
+      episodes/<ep>/project.yaml
+
+Rules:
+
+- An episode deep-merges series.yaml under its own project.yaml: the episode
+  wins per key, dicts merge, lists replace. `script` is always episode-only.
+- series.yaml is a fragment. It is never validated on its own; validation
+  runs on the merged result.
+- `ce.py init-series <name> --template <t>` scaffolds series.yaml plus the
+  first episode. `ce.py init <t> <series>/episodes/<ep>` adds another.
+- `ce.py validate|tts|render projects/<series>` runs every episode in name
+  order and stops at the first failure.
+- Shared art: place images in each episode's assets/. There is no cross-dir
+  asset resolution.
+- Vendors never learn about series. When inheritance applied, ce.py writes
+  the merged document to `.merged.yaml` beside project.yaml and the vendor
+  reads that. Stale sidecars are removed before each render.
+
 ## Honesty rules
 
 - The build log always labels audio: `voicevox` (real TTS) or `estimate`

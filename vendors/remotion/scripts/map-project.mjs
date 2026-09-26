@@ -22,7 +22,11 @@ function die(msg) {
   process.exit(1);
 }
 
-const projectPath = path.join(projectDir, "project.yaml");
+// Platform materializes series inheritance into .merged.yaml; prefer it.
+const mergedPath = path.join(projectDir, ".merged.yaml");
+const projectPath = fs.existsSync(mergedPath)
+  ? mergedPath
+  : path.join(projectDir, "project.yaml");
 if (!fs.existsSync(projectPath)) die(`missing ${projectPath}`);
 let project;
 try {

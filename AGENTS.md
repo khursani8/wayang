@@ -44,6 +44,8 @@ Bahasa Malaysia content.
 ## Pointers
 
 - Per-engine quirks: `vendors/<engine>/AGENTS.md`
+- Beginners: hand them `docs/tutorial.md` and relay FILL items from
+  the preflight in plain words
 - YAML reference: `docs/project-yaml.md`
 - Join as a vendor: `docs/vendor-contract.md`
 - Art generators + how the mascots are made: `docs/mascot-art.md`

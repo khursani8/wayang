@@ -17,6 +17,9 @@ Framework-agnostic video template platform: fill one YAML, get a video.
   manual and a `build.sh PROJECT_DIR OUT_DIR` entry. The platform contract
   is the root `AGENTS.md`.
 
+New here? Follow `docs/tutorial.md` - from clone to your first MP4 in
+seven steps.
+
 ## Requirements
 
 - Node 24 + npm (rendering), uv (CLI), ffmpeg/ffprobe (duration guard).

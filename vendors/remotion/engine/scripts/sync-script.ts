@@ -1,8 +1,8 @@
 /**
- * config/script.yaml を読み込んで src/data/script.ts に変換するスクリプト
- * config/characters.yaml からキャラクター情報も読み込む
+ * Maps config/script.yaml + config/characters.yaml to src/data/script.ts.
+ * (characters also come from config/characters.yaml.)
  *
- * 使用方法: npm run sync-script
+ * Usage: npm run sync-script
  */
 
 import * as fs from "fs";
@@ -70,7 +70,7 @@ function loadDurations(): Record<string, number> {
 }
 
 function main() {
-  console.log("📖 config/script.yaml を読み込み中...");
+  console.log("Reading config/script.yaml...");
 
   // Load YAML files
   const scriptYaml = fs.readFileSync(SCRIPT_YAML_PATH, "utf-8");
@@ -122,10 +122,10 @@ function main() {
   // Generate TypeScript content
   const tsContent = `import { CharacterId } from "../config";
 
-// アニメーションの型定義
+// Animation types
 export type AnimationType = "none" | "fadeIn" | "slideUp" | "slideLeft" | "zoomIn" | "bounce";
 
-// ビジュアルの型定義
+// Visual types
 export interface VisualContent {
   type: "image" | "text" | "none";
   src?: string;
@@ -136,23 +136,23 @@ export interface VisualContent {
   animation?: AnimationType;
 }
 
-// 効果音の型定義
+// Sound effect types
 export interface SoundEffect {
   src: string;
   volume?: number;
 }
 
-// BGM設定
+// BGM types
 export interface BGMConfig {
   src: string;
   volume?: number;
   loop?: boolean;
 }
 
-// BGM設定（動画全体で使用）
+// BGM for the whole video
 export const bgmConfig: BGMConfig | null = null;
 
-// セリフデータの型定義
+// Script line types
 export interface ScriptLine {
   id: number;
   character: CharacterId;
@@ -167,7 +167,7 @@ export interface ScriptLine {
   se?: SoundEffect;
 }
 
-// シーン定義
+// Scene metadata
 export interface SceneInfo {
   id: number;
   title: string;
@@ -175,23 +175,23 @@ export interface SceneInfo {
 }
 
 export const scenes: SceneInfo[] = [
-  { id: 1, title: "オープニング", background: "gradient" },
-  { id: 2, title: "メインコンテンツ", background: "solid" },
-  { id: 3, title: "エンディング", background: "gradient" },
+  { id: 1, title: "Opening", background: "gradient" },
+  { id: 2, title: "Main Content", background: "solid" },
+  { id: 3, title: "Ending", background: "gradient" },
 ];
 
-// content_engine: データ駆動キャラクター定義
+// content_engine: data-driven character definitions
 export const CHARACTERS: { id: CharacterId; name: string; position: "left" | "right"; color: string; flipX: boolean }[] = ${JSON.stringify(charsData, null, 2)};
 
 export const characterColors: Record<string, string> = ${JSON.stringify(
   Object.fromEntries(charsData.map((c) => [c.id, c.color]))
 )};
 
-// このファイルは config/script.yaml から自動生成されます
-// 編集する場合は config/script.yaml を編集して npm run sync-script を実行してください
+// This file is generated from config/script.yaml; edit that and re-run npm run sync-script.
+
 export const scriptData: ScriptLine[] = ${JSON.stringify(processedLines, null, 2)};
 
-// VOICEVOXスクリプト生成用
+// VOICEVOX script generation helper
 export const generateVoicevoxScript = (
   data: ScriptLine[],
   characterSpeakerMap: Record<CharacterId, number>
@@ -207,8 +207,8 @@ export const generateVoicevoxScript = (
 `;
 
   fs.writeFileSync(OUTPUT_PATH, tsContent);
-  console.log("✅ src/data/script.ts を生成しました");
-  console.log(`   ${processedLines.length} 件のセリフ`);
+  console.log("Generated src/data/script.ts");
+  console.log(`   ${processedLines.length} line(s)`);
 }
 
 main();

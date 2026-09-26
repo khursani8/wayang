@@ -4,10 +4,10 @@ import { scriptData } from "./data/script";
 import { VIDEO_CONFIG } from "./config";
 import { SETTINGS } from "./settings.generated";
 
-// 動画の総フレーム数を計算
-// Main と同じ再生速度調整を 1 行ごとに適用する。未調整のまま合計すると、
-// 速度 > 1 のとき末尾に空き映像が残る（Main は調整済みフレームで進む）。
-// 最初のセリフはフレーム 0 から始まるため、オープニング余白は不要。
+// Total composition frames.
+// Apply the same per-line playback-rate adjustment Main.tsx uses. Summing
+// raw frames leaves an empty tail whenever rate > 1 (Main advances in
+// adjusted frames). The first line starts at frame 0, so no opening buffer.
 const playbackRate = SETTINGS.video.playbackRate ?? 1;
 const adjusted = (frames: number) => Math.ceil(frames / playbackRate);
 const calculateTotalFrames = () => {
@@ -15,7 +15,7 @@ const calculateTotalFrames = () => {
   for (const line of scriptData) {
     total += adjusted(line.durationInFrames) + adjusted(line.pauseAfter);
   }
-  total += 60; // エンディング用の余白
+  total += 60; // closing buffer
   return total;
 };
 

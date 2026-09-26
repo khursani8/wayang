@@ -1,35 +1,36 @@
 import { CharacterId } from "../config";
 
-// アニメーションの型定義
+// Animation types
 export type AnimationType = "none" | "fadeIn" | "slideUp" | "slideLeft" | "zoomIn" | "bounce";
 
-// ビジュアルの型定義
+// Visual types
 export interface VisualContent {
   type: "image" | "text" | "none";
   src?: string;
   text?: string;
   fontSize?: number;
   color?: string;
+  outlineColor?: string;
   animation?: AnimationType;
 }
 
-// 効果音の型定義
+// Sound effect types
 export interface SoundEffect {
   src: string;
   volume?: number;
 }
 
-// BGM設定
+// BGM types
 export interface BGMConfig {
   src: string;
   volume?: number;
   loop?: boolean;
 }
 
-// BGM設定（動画全体で使用）
+// BGM for the whole video
 export const bgmConfig: BGMConfig | null = null;
 
-// セリフデータの型定義
+// Script line types
 export interface ScriptLine {
   id: number;
   character: CharacterId;
@@ -44,7 +45,7 @@ export interface ScriptLine {
   se?: SoundEffect;
 }
 
-// シーン定義
+// Scene metadata
 export interface SceneInfo {
   id: number;
   title: string;
@@ -52,87 +53,112 @@ export interface SceneInfo {
 }
 
 export const scenes: SceneInfo[] = [
-  { id: 1, title: "オープニング", background: "gradient" },
-  { id: 2, title: "メインコンテンツ", background: "solid" },
-  { id: 3, title: "エンディング", background: "gradient" },
+  { id: 1, title: "Opening", background: "gradient" },
+  { id: 2, title: "Main Content", background: "solid" },
+  { id: 3, title: "Ending", background: "gradient" },
 ];
 
-// content_engine: データ駆動キャラクター定義
+// content_engine: data-driven character definitions
 export const CHARACTERS: { id: CharacterId; name: string; position: "left" | "right"; color: string; flipX: boolean }[] = [
   {
-    "id": "zundamon",
-    "name": "ずんだもん",
+    "id": "momo",
+    "name": "Momo",
     "position": "right",
-    "color": "#228B22",
+    "color": "#37474F",
     "flipX": false
   },
   {
-    "id": "metan",
-    "name": "四国めたん",
+    "id": "kiki",
+    "name": "Kiki",
     "position": "left",
-    "color": "#FF1493",
-    "flipX": false
-  },
-  {
-    "id": "kuro_zunda",
-    "name": "くろずんだ",
-    "position": "right",
-    "color": "#333333",
+    "color": "#F9A825",
     "flipX": false
   }
 ];
 
-export const characterColors: Record<string, string> = {"zundamon":"#228B22","metan":"#FF1493","kuro_zunda":"#333333"};
+export const characterColors: Record<string, string> = {"momo":"#37474F","kiki":"#F9A825"};
 
-// このファイルは config/script.yaml から自動生成されます
-// 編集する場合は config/script.yaml を編集して npm run sync-script を実行してください
+// This file is generated from config/script.yaml; edit that and re-run npm run sync-script.
+
 export const scriptData: ScriptLine[] = [
   {
     "id": 1,
-    "character": "zundamon",
-    "text": "ずんだもんなのだ！",
+    "character": "momo",
+    "text": "Hai semua! Saya Momo, tapir paling ceria!",
     "scene": 1,
-    "pauseAfter": 15,
+    "pauseAfter": 12,
     "visual": {
       "type": "text",
-      "text": "Remotion × VOICEVOX\nテンプレート",
-      "fontSize": 80,
+      "text": "Momo & Kiki",
+      "fontSize": 96,
       "color": "#ffffff",
       "animation": "zoomIn"
     },
-    "voiceFile": "01_zundamon.wav",
-    "durationInFrames": 53
+    "voiceFile": "01_momo.wav",
+    "durationInFrames": 60
   },
   {
     "id": 2,
-    "character": "metan",
-    "text": "四国めたんです。",
+    "character": "kiki",
+    "text": "Dan saya Kiki, burung enggang yang tak pernah senyap!",
     "scene": 1,
-    "pauseAfter": 15,
-    "voiceFile": "02_metan.wav",
-    "durationInFrames": 44
+    "pauseAfter": 12,
+    "voiceFile": "02_kiki.wav",
+    "durationInFrames": 60
   },
   {
     "id": 3,
-    "character": "zundamon",
-    "text": "このテンプレートで紹介動画が作れるのだ！",
-    "scene": 1,
-    "pauseAfter": 10,
-    "voiceFile": "03_zundamon.wav",
-    "durationInFrames": 123
+    "character": "momo",
+    "text": "Kami nak bercerita pasal rakan baharu kita hari ini!",
+    "scene": 2,
+    "pauseAfter": 12,
+    "visual": {
+      "type": "text",
+      "text": "Rakan Baharu!",
+      "fontSize": 84,
+      "color": "#ffffff",
+      "animation": "slideLeft"
+    },
+    "voiceFile": "03_momo.wav",
+    "durationInFrames": 60
   },
   {
     "id": 4,
-    "character": "metan",
-    "text": "よろしくね。",
-    "scene": 1,
-    "pauseAfter": 30,
-    "voiceFile": "04_metan.wav",
-    "durationInFrames": 31
+    "character": "kiki",
+    "text": "Jom kita kenali mereka sama-sama.",
+    "scene": 2,
+    "pauseAfter": 12,
+    "voiceFile": "04_kiki.wav",
+    "durationInFrames": 60
+  },
+  {
+    "id": 5,
+    "character": "momo",
+    "text": "Jangan lupa follow untuk lebih banyak video!",
+    "scene": 3,
+    "pauseAfter": 12,
+    "visual": {
+      "type": "text",
+      "text": "Follow Kami!",
+      "fontSize": 88,
+      "color": "#ffffff",
+      "animation": "bounce"
+    },
+    "voiceFile": "05_momo.wav",
+    "durationInFrames": 60
+  },
+  {
+    "id": 6,
+    "character": "kiki",
+    "text": "Jumpa lagi di episod akan datang!",
+    "scene": 3,
+    "pauseAfter": 15,
+    "voiceFile": "06_kiki.wav",
+    "durationInFrames": 60
   }
 ];
 
-// VOICEVOXスクリプト生成用
+// VOICEVOX script generation helper
 export const generateVoicevoxScript = (
   data: ScriptLine[],
   characterSpeakerMap: Record<CharacterId, number>

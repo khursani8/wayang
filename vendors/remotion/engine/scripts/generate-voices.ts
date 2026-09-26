@@ -1,13 +1,13 @@
 #!/usr/bin/env npx ts-node
 
 /**
- * VOICEVOX音声一括生成スクリプト
+ * VOICEVOX batch voice generation
  *
- * 使用方法:
+ * Usage:
  *   npx ts-node scripts/generate-voices.ts
  *
- * 前提条件:
- *   - VOICEVOXがlocalhost:50021で起動していること
+ * Requires:
+ *   - VOICEVOX running at localhost:50021
  */
 
 import * as fs from "fs";
@@ -16,7 +16,7 @@ import * as yaml from "yaml";
 
 const ROOT_DIR = process.cwd();
 
-// 設定読み込み
+// Settings
 const CONFIG_PATH = path.join(ROOT_DIR, "src/config.ts");
 const SCRIPT_PATH = path.join(ROOT_DIR, "src/data/script.ts");
 const OUTPUT_DIR = path.join(ROOT_DIR, "public/voices");
@@ -39,7 +39,7 @@ interface CharacterConfig {
   voicevoxSpeakerId: number;
 }
 
-// VOICEVOXが起動しているか確認
+// Check VOICEVOX is up
 async function checkVoicevox(host: string): Promise<boolean> {
   try {
     const response = await fetch(`${host}/version`);
@@ -49,12 +49,12 @@ async function checkVoicevox(host: string): Promise<boolean> {
       return true;
     }
   } catch (e) {
-    console.error("VOICEVOXに接続できません。VOICEVOXを起動してください。");
+    console.error("Cannot reach VOICEVOX. Start it and retry.");
   }
   return false;
 }
 
-// 音声クエリを取得
+// Fetch an audio query
 async function getAudioQuery(
   host: string,
   text: string,
@@ -71,7 +71,7 @@ async function getAudioQuery(
   return response.json();
 }
 
-// 音声を合成
+// Synthesize
 async function synthesize(
   host: string,
   query: any,
@@ -104,7 +104,7 @@ function getWavDuration(filePath: string): number {
   return dataSize / byteRate;
 }
 
-// メイン処理
+// Main
 async function main() {
   const host = "http://localhost:50021";
   const settingsYaml = yaml.parse(
@@ -113,22 +113,22 @@ async function main() {
   const fps = settingsYaml.video?.fps ?? 30;
   const playbackRate = settingsYaml.video?.playbackRate ?? 1.2;
 
-  // VOICEVOX確認
+  // VOICEVOX check
   if (!(await checkVoicevox(host))) {
     process.exit(1);
   }
 
-  // 出力ディレクトリ作成
+  // Output directory
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  // スクリプトデータを動的に読み込み
-  // Note: 実際の実装ではesbuildなどでビルドしてから読み込む
-  console.log("スクリプトデータを読み込んでいます...");
+  // Load script data
+  // (simple regex parse of src/data/script.ts below)
+  console.log("Loading script data...");
+  // Data comes from the parse below.
 
-  // ここでは例としてハードコードされたデータを使用
-  // 実際にはscript.tsをパースして使用
+ 
   const scriptData: ScriptLine[] = [];
   // Character speaker ids come from config/characters.yaml (data-driven)
   const charactersYaml = yaml.parse(
@@ -140,14 +140,14 @@ async function main() {
       .map(([id, c]) => [id, c.speakerId as number])
   );
 
-  // script.tsを読み込んでパース
+  // Parse src/data/script.ts
   const scriptContent = fs.readFileSync(SCRIPT_PATH, "utf-8");
   const scriptDataMatch = scriptContent.match(
     /export const scriptData[^=]*=\s*\[([\s\S]*?)\];/
   );
 
   if (scriptDataMatch) {
-    // 簡易パース（本番ではAST解析を使用）
+    // Simple regex parse
     const dataStr = scriptDataMatch[1];
     const lineMatches = dataStr.matchAll(
       /\{\s*"?id"?:\s*(\d+),\s*"?character"?:\s*"([^"]+)",\s*"?text"?:\s*"([^"]+)"[\s\S]*?"?voiceFile"?:\s*"([^"]+)"/g
@@ -163,7 +163,7 @@ async function main() {
     }
   }
 
-  console.log(`${scriptData.length}件のセリフを処理します...`);
+  console.log(`Processing ${scriptData.length} line(s)...`);
 
   const durationsArray: { id: number; file: string; duration: number; frames: number }[] = [];
   const durationsMap: Record<string, number> = {};
@@ -178,7 +178,7 @@ async function main() {
 
     const outputPath = path.join(OUTPUT_DIR, line.voiceFile);
 
-    // 既存ファイルがあればスキップ（オプション）
+    // Optional skip of existing files
     // if (fs.existsSync(outputPath)) {
     //   console.log(`Skip: ${line.voiceFile} (already exists)`);
     //   continue;
@@ -187,16 +187,16 @@ async function main() {
     try {
       console.log(`Generating: ${line.voiceFile} - "${line.text.substring(0, 30)}..."`);
 
-      // 音声クエリ取得
+    // Audio query
       const query = await getAudioQuery(host, line.text, speakerId);
 
-      // 音声合成
+    // Synthesis
       const audio = await synthesize(host, query, speakerId);
 
-      // ファイル保存
+    // Save
       fs.writeFileSync(outputPath, Buffer.from(audio));
 
-      // 長さを取得してフレーム数を計算
+    // Measure duration and convert to frames
       const duration = getWavDuration(outputPath);
       const frames = Math.ceil(duration * fps * playbackRate);
 
@@ -215,13 +215,13 @@ async function main() {
     }
   }
 
-  // 結果をJSONで保存（sync-script.tsが期待するオブジェクト形式）
+  // Save durations.json (the format sync-script.ts expects)
   const resultPath = path.join(OUTPUT_DIR, "durations.json");
   fs.writeFileSync(resultPath, JSON.stringify(durationsMap, null, 2));
   console.log(`\nDuration data saved to: ${resultPath}`);
 
-  // script.ts更新用のコードを出力
-  console.log("\n=== script.ts更新用 ===");
+  // Output snippet for script.ts updates
+  console.log("\n=== script.ts update snippet ===");
   for (const d of durationsArray) {
     console.log(`ID ${d.id}: durationInFrames: ${d.frames}, // ${d.duration.toFixed(2)}s`);
   }

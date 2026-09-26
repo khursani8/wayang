@@ -1,23 +1,16 @@
-# キャラクター設定
-# 新しいキャラクターを追加する場合はここに定義
-
-zundamon:
-  name: ずんだもん
-  speakerId: 3
+# Character settings for the standalone engine sample.
+# content_engine projects define characters in their own project.yaml.
+momo:
+  name: Momo
+  speakerId: null
   position: right
-  color: "#228B22"
+  color: "#37474F"
+  flipX: false
   defaultPauseAfter: 15
-
-metan:
-  name: 四国めたん
-  speakerId: 2
+kiki:
+  name: Kiki
+  speakerId: null
   position: left
-  color: "#FF1493"
-  defaultPauseAfter: 15
-
-kuro_zunda:
-  name: くろずんだ
-  speakerId: null  # VOICEVOX非対応
-  position: right
-  color: "#333333"
+  color: "#F9A825"
+  flipX: false
   defaultPauseAfter: 15

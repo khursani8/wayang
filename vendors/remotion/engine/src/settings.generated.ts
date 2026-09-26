@@ -1,6 +1,5 @@
-// このファイルは自動生成されます
-// 編集する場合は video-settings.yaml を編集してください
-// npm run sync-settings で再生成されます
+// This file is generated from video-settings.yaml by sync-settings.ts.
+// Edit video-settings.yaml and re-run npm run sync-settings.
 
 export const SETTINGS = {
   "font": {
@@ -37,25 +36,12 @@ export const SETTINGS = {
   "colors": {
     "background": "#ffffff",
     "text": "#ffffff",
-    "zundamon": "#228B22",
-    "metan": "#FF1493"
+    "accent1": "#37474F",
+    "accent2": "#F9A825"
   }
 } as const;
 
-// キャラクターごとの利用可能な画像ファイル
-export const AVAILABLE_IMAGES: Record<string, string[]> = {
-  "kuro_zunda": [
-    "mouth_close.png",
-    "mouth_open.png"
-  ],
-  "metan": [
-    "mouth_close.png",
-    "mouth_open.png"
-  ],
-  "zundamon": [
-    "mouth_close.png",
-    "mouth_open.png"
-  ]
-};
+// Available art files per character id (scanned from public/images).
+export const AVAILABLE_IMAGES: Record<string, string[]> = {};
 
 export type VideoSettings = typeof SETTINGS;

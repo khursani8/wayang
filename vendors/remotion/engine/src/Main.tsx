@@ -7,10 +7,10 @@ import { Subtitle } from "./components/Subtitle";
 import { Character } from "./components/Character";
 import { SceneVisuals } from "./components/SceneVisuals";
 
-// Google Fontsをロード
+// Load Google Fonts
 const { fontFamily } = loadFont();
 
-// 再生速度を考慮したフレーム数を計算
+// Frame counts adjusted for playback rate
 const getAdjustedFrames = (frames: number): number =>
   Math.ceil(frames / SETTINGS.video.playbackRate);
 
@@ -18,7 +18,7 @@ export const Main: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // 現在のセリフを計算
+  // Current line
   let accumulatedFrames = 0;
   let currentLine: ScriptLine | null = null;
   let currentLineStartFrame = 0;
@@ -34,7 +34,7 @@ export const Main: React.FC = () => {
       currentLine = line;
       currentLineStartFrame = accumulatedFrames;
       currentScene = line.scene;
-      // 音声再生中は adjustedDuration の間だけ
+      // Speaking while inside adjustedDuration
       isSpeaking = frame < accumulatedFrames + adjustedDuration;
       break;
     }
@@ -44,7 +44,7 @@ export const Main: React.FC = () => {
 
   const sceneInfo = scenes.find((s) => s.id === currentScene) || scenes[0];
 
-  // 各セリフの開始フレームを計算
+  // Start frame per line
   const getLineStartFrame = (index: number): number => {
     let startFrame = 0;
     for (let i = 0; i < index; i++) {
@@ -55,7 +55,7 @@ export const Main: React.FC = () => {
     return startFrame;
   };
 
-  // 各セリフの再生速度調整済み長さを取得
+  // Rate-adjusted duration per line
   const getLineDuration = (line: ScriptLine): number =>
     getAdjustedFrames(line.durationInFrames);
 
@@ -66,8 +66,8 @@ export const Main: React.FC = () => {
         fontFamily: "'Noto Sans JP', 'Hiragino Sans', sans-serif",
       }}
     >
-      {/* 黒板背景（合成画像: assets/background/generate_background.py）
-          プロジェクトの assets/background.png で上書き可能 */}
+      {/* Background image (assets/background generators); a project can
+          override it with assets/background.png */}
       <Img
         src={staticFile("background.png")}
         style={{
@@ -79,7 +79,7 @@ export const Main: React.FC = () => {
           objectFit: "cover",
         }}
       />
-      {/* BGM再生 */}
+      {/* BGM */}
       {bgmConfig && (
         <Audio
           src={staticFile(`bgm/${bgmConfig.src}`)}
@@ -88,7 +88,7 @@ export const Main: React.FC = () => {
         />
       )}
 
-      {/* 音声再生 */}
+      {/* Voice lines */}
       {scriptData.map((line, index) => {
         const startFrame = getLineStartFrame(index);
         return (
@@ -102,7 +102,7 @@ export const Main: React.FC = () => {
               src={staticFile(`voices/${line.voiceFile}`)}
               playbackRate={SETTINGS.video.playbackRate}
             />
-            {/* 効果音再生 */}
+            {/* Sound effect */}
             {line.se && (
               <Audio
                 src={staticFile(`se/${line.se.src}`)}
@@ -113,7 +113,7 @@ export const Main: React.FC = () => {
         );
       })}
 
-      {/* シーンごとのビジュアル */}
+      {/* Per-scene visuals */}
       <SceneVisuals
         scene={currentScene}
         lineId={currentLine?.id ?? null}
@@ -122,7 +122,7 @@ export const Main: React.FC = () => {
         visual={currentLine?.visual}
       />
 
-      {/* キャラクター（config/characters.yaml 由来・データ駆動） */}
+      {/* Characters (data-driven from config/characters.yaml) */}
       {CHARACTERS.map((c) => (
         <Character
           key={c.id}
@@ -132,7 +132,7 @@ export const Main: React.FC = () => {
         />
       ))}
 
-      {/* 字幕 */}
+      {/* Subtitle */}
       {currentLine && (
         <Sequence
           key={`subtitle-${currentLine.id}`}

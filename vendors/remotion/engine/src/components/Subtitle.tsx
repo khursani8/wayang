@@ -5,7 +5,7 @@ import { CharacterId } from "../config";
 import { characterColors } from "../data/script";
 import { SETTINGS } from "../settings.generated";
 
-// BudouXパーサーを初期化（日本語の自然な改行位置を計算）
+// BudouX parser (natural line breaks for Japanese/CJK text)
 const parser = loadDefaultJapaneseParser();
 
 interface SubtitleProps {
@@ -13,12 +13,12 @@ interface SubtitleProps {
   character: CharacterId;
 }
 
-// CJK 行は BudouX で改行位置を決め、それ以外（ラテン文字など）は
-// ブラウザの単語折り返しに任せる。字幕基準: 1行約42字、最大2行。
-const CJK = /[぀-ヿ㐀-䶿一-鿿豈-﫿ｦ-ﾟ]/;
+// CJK lines segment via BudouX; other scripts wrap at word boundaries.
+// Subtitle standard: ~42 chars per line, max 2 lines.
+const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
 
 const SegmentedText = ({ text }: { text: string }) => {
-  // まず改行で行分割し、CJK行だけ BudouX で処理する
+  // Split by newline first; only CJK lines go through BudouX
   const lines = useMemo(() => {
     return text.split("\n").map((line) => (CJK.test(line) ? parser.parse(line) : [line]));
   }, [text]);
@@ -53,18 +53,18 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // 設定から値を取得
+  // Settings
   const { font, subtitle, colors } = SETTINGS;
 
-  // フェードインアニメーション
+  // Fade in
   const opacity = interpolate(frame, [0, fps * 0.15], [0, 1], {
     extrapolateRight: "clamp",
   });
 
-  // キャラクター色を取得
+  // Character color
   const characterColor = characterColors[character] ?? colors.text;
 
-  // フォント色の決定
+  // Text and outline colors
   const getColor = (colorValue: string) => {
     if (colorValue === "character") {
       return characterColor;
@@ -96,7 +96,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
         textAlign: "center",
       }}
     >
-      {/* 袋文字: アウトラインと本文を重ねて表示 */}
+      {/* Outlined text: stroke layer behind the fill layer */}
       <div
         style={{
           position: "relative",
@@ -105,7 +105,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
           maxWidth: "100%",
         }}
       >
-        {/* アウトライン（後ろ） */}
+        {/* Outline (behind) */}
         <span
           style={{
             ...baseStyle,
@@ -119,7 +119,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
         >
           <SegmentedText text={text} />
         </span>
-        {/* 本文（前） */}
+        {/* Fill (front) */}
         <span
           style={{
             ...baseStyle,

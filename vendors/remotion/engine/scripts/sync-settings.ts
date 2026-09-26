@@ -1,7 +1,7 @@
 /**
- * video-settings.yaml を読み込んで src/settings.generated.ts に変換するスクリプト
+ * Maps video-settings.yaml to src/settings.generated.ts.
  *
- * 使用方法: npm run sync-settings
+ * Usage: npm run sync-settings
  */
 
 import * as fs from "fs";
@@ -48,12 +48,12 @@ interface VideoSettings {
   colors: {
     background: string;
     text: string;
-    zundamon: string;
-    metan: string;
+    accent1: string;
+    accent2: string;
   };
 }
 
-// キャラクターごとの利用可能な画像をスキャン
+// Scan public/images/<id>/ for available character art.
 function scanCharacterImages(): Record<string, string[]> {
   const availableImages: Record<string, string[]> = {};
 
@@ -76,27 +76,26 @@ function scanCharacterImages(): Record<string, string[]> {
 }
 
 function main() {
-  console.log("📖 video-settings.yaml を読み込み中...");
+  console.log("Reading video-settings.yaml...");
 
   const yamlContent = fs.readFileSync(YAML_PATH, "utf-8");
   const settings: VideoSettings = yaml.parse(yamlContent);
 
-  console.log("🖼️ キャラクター画像をスキャン中...");
+  console.log("Scanning character images...");
   const availableImages = scanCharacterImages();
 
   for (const [char, files] of Object.entries(availableImages)) {
     console.log(`  ${char}: ${files.join(", ")}`);
   }
 
-  console.log("✨ 設定を変換中...");
+  console.log("Generating settings...");
 
-  const tsContent = `// このファイルは自動生成されます
-// 編集する場合は video-settings.yaml を編集してください
-// npm run sync-settings で再生成されます
+  const tsContent = `// This file is generated from video-settings.yaml by sync-settings.ts.
+// Edit video-settings.yaml and re-run npm run sync-settings.
 
 export const SETTINGS = ${JSON.stringify(settings, null, 2)} as const;
 
-// キャラクターごとの利用可能な画像ファイル
+// Available art files per character id (scanned from public/images).
 export const AVAILABLE_IMAGES: Record<string, string[]> = ${JSON.stringify(availableImages, null, 2)};
 
 export type VideoSettings = typeof SETTINGS;
@@ -104,7 +103,7 @@ export type VideoSettings = typeof SETTINGS;
 
   fs.writeFileSync(OUTPUT_PATH, tsContent);
 
-  console.log("✅ src/settings.generated.ts を生成しました");
+  console.log("Generated src/settings.generated.ts");
 }
 
 main();

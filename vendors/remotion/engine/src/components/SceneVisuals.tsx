@@ -10,7 +10,7 @@ interface SceneVisualsProps {
   visual?: VisualContent;
 }
 
-// アニメーションスタイルを計算
+// Animation styles
 const useAnimationStyle = (
   frame: number,
   fps: number,
@@ -71,7 +71,7 @@ export const SceneVisuals: React.FC<SceneVisualsProps> = ({
 }) => {
   const animationStyle = useAnimationStyle(frame, fps, visual?.animation);
 
-  // コンテンツコンテナ（黒板内に収まるよう調整）
+  // Content container fits the board area
   const contentContainer: React.CSSProperties = {
     position: "absolute",
     top: 60,
@@ -84,12 +84,12 @@ export const SceneVisuals: React.FC<SceneVisualsProps> = ({
     ...animationStyle,
   };
 
-  // ビジュアルがない場合はデフォルト表示
+  // Nothing to draw without a visual
   if (!visual || visual.type === "none") {
     return null;
   }
 
-  // 画像表示
+  // Image visual
   if (visual.type === "image" && visual.src) {
     return (
       <div style={contentContainer}>
@@ -106,7 +106,7 @@ export const SceneVisuals: React.FC<SceneVisualsProps> = ({
     );
   }
 
-  // テキスト表示（字幕と同じ縁取り: 明るい背景でも読める）
+  // Text visual (outlined like subtitles: readable on light backgrounds)
   if (visual.type === "text" && visual.text) {
     return (
       <div style={contentContainer}>

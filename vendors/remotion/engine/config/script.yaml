@@ -1,32 +1,49 @@
-# スクリプトデータ
-# セリフを編集後、npm run sync-script で反映
-
+# Sample script for the standalone engine preview (Bahasa Malaysia).
 - id: 1
-  character: zundamon
-  text: ずんだもんなのだ！
+  character: momo
+  text: "Hai semua! Saya Momo, tapir paling ceria!"
   scene: 1
-  pauseAfter: 15
+  pauseAfter: 12
   visual:
     type: text
-    text: "Remotion × VOICEVOX\nテンプレート"
-    fontSize: 80
+    text: "Momo & Kiki"
+    fontSize: 96
     color: "#ffffff"
     animation: zoomIn
-
 - id: 2
-  character: metan
-  text: 四国めたんです。
+  character: kiki
+  text: "Dan saya Kiki, burung enggang yang tak pernah senyap!"
   scene: 1
-  pauseAfter: 15
-
+  pauseAfter: 12
 - id: 3
-  character: zundamon
-  text: このテンプレートで紹介動画が作れるのだ！
-  scene: 1
-  pauseAfter: 10
-
+  character: momo
+  text: "Kami nak bercerita pasal rakan baharu kita hari ini!"
+  scene: 2
+  pauseAfter: 12
+  visual:
+    type: text
+    text: "Rakan Baharu!"
+    fontSize: 84
+    color: "#ffffff"
+    animation: slideLeft
 - id: 4
-  character: metan
-  text: よろしくね。
-  scene: 1
-  pauseAfter: 30
+  character: kiki
+  text: "Jom kita kenali mereka sama-sama."
+  scene: 2
+  pauseAfter: 12
+- id: 5
+  character: momo
+  text: "Jangan lupa follow untuk lebih banyak video!"
+  scene: 3
+  pauseAfter: 12
+  visual:
+    type: text
+    text: "Follow Kami!"
+    fontSize: 88
+    color: "#ffffff"
+    animation: bounce
+- id: 6
+  character: kiki
+  text: "Jumpa lagi di episod akan datang!"
+  scene: 3
+  pauseAfter: 15

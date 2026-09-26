@@ -9,7 +9,7 @@ interface CharacterProps {
   emotion?: string;
 }
 
-// 表情に応じた画像ファイル名を取得（存在チェック付き）
+// Image file name for the current emotion (existence-checked)
 const getImageFileName = (
   characterId: string,
   emotion: string,
@@ -18,24 +18,24 @@ const getImageFileName = (
   const state = mouthOpen ? "open" : "close";
   const availableFiles = AVAILABLE_IMAGES[characterId] || [];
 
-  // 通常表情またはemotionがない場合
+  // Normal expression or no emotion
   if (emotion === "normal" || !emotion) {
     return `mouth_${state}.png`;
   }
 
-  // 表情差分を試す: {emotion}_open.png, {emotion}_close.png
+  // Emotion variants: {emotion}_open.png, {emotion}_close.png
   const emotionFile = `${emotion}_${state}.png`;
   if (availableFiles.includes(emotionFile)) {
     return emotionFile;
   }
 
-  // 表情の口開き画像だけある場合（口閉じがない）、口開き画像を使う
+  // Emotion open art only? Fall back to the open image
   const emotionOpenFile = `${emotion}_open.png`;
   if (availableFiles.includes(emotionOpenFile)) {
     return emotionOpenFile;
   }
 
-  // 表情差分がない場合はデフォルトにフォールバック
+  // No emotion variant: fall back to the default
   return `mouth_${state}.png`;
 };
 
@@ -55,28 +55,28 @@ export const Character: React.FC<CharacterProps> = ({
 
   const isLeft = characterConfig.position === "left";
 
-  // 口パクアニメーション（話している時、約6fpsで口を開閉）
+  // Mouth flap (~6fps) while speaking
   const mouthOpen = isSpeaking ? Math.floor(frame / 5) % 2 === 0 : false;
 
-  // 話している時のアニメーション（上下に揺れる）
+  // Gentle bob while speaking
   const bounceY = isSpeaking
     ? interpolate(Math.sin(frame * 0.3), [-1, 1], [-3, 3])
     : 0;
 
-  // 登場アニメーション（画面端からスライドイン）
+  // Slide in from the character side
   const slideIn = interpolate(frame, [0, fps * 0.5], [isLeft ? -200 : 200, 0], {
     extrapolateRight: "clamp",
   });
 
-  // スケールは常に1（サイズ変更なし）
+  // Scale stays 1 (no size changes)
   const scale = 1;
 
-  // 画像パスを取得（表情差分対応、存在チェック付き）
+  // Image path (emotion variants, existence-checked)
   const basePath = SETTINGS.character.imagesBasePath;
   const imageFileName = getImageFileName(characterId, emotion, mouthOpen);
   const currentImage = `${basePath}/${characterId}/${imageFileName}`;
 
-  // 設定ファイルのuseImagesフラグをチェック
+  // useImages flag from settings
   const hasImage = SETTINGS.character.useImages;
 
   return (
@@ -99,7 +99,7 @@ export const Character: React.FC<CharacterProps> = ({
           }}
         />
       ) : (
-        // 画像がない場合のプレースホルダー
+        // Placeholder when no art exists
         <div
           style={{
             width: 200,

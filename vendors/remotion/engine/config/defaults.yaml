@@ -1,14 +1,10 @@
-# デフォルト値設定
-
+# Default values for new script lines (standalone engine sample).
 newLine:
-  character: zundamon
-  pauseAfter: 15
+  character: momo
+  pauseAfter: 12
   durationInFrames: 60
   scene: 1
   emotion: null
-
 automation:
-  # 保存時に音声を自動生成（VOICEVOXが起動している場合）
   voiceOnSave: false
-  # voiceFileを自動命名（{id}_{character}.wav）
   autoVoiceFileName: true

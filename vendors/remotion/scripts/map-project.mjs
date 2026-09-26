@@ -237,5 +237,17 @@ if (platformEngines === null) {
 fs.writeFileSync(path.join(workVoices, "durations.json"), JSON.stringify(durations, null, 2));
 fs.writeFileSync(path.join(workVoices, ".source"), platformEngines ? "platform" : "estimate");
 
+// Expected composition length (Root.tsx contract): sum of per-line
+// playback-rate-adjusted frames plus the 60-frame closing buffer.
+// build.sh compares this against the rendered file as a regression guard
+// for the empty-tail bug class.
+const adjustedFrames = (frames) => Math.ceil(frames / playbackRate);
+let expectedFrames = 60;
+for (const line of engineScript) {
+  const d = durations[`${String(line.id).padStart(2, "0")}_${line.character}.wav`];
+  expectedFrames += adjustedFrames(d) + adjustedFrames(line.pauseAfter ?? 15);
+}
+fs.writeFileSync(path.join(workDir, "expected-seconds.txt"), (expectedFrames / fps).toFixed(3));
+
 console.log(`[map-project] characters: ${charIds.join(", ")}`);
 console.log(`[map-project] lines: ${engineScript.length}, fps: ${fps}, playbackRate: ${playbackRate}, estimate_cps: ${cps}`);

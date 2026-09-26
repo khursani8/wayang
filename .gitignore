@@ -6,3 +6,5 @@ out/
 .rumpun/runs/
 .rumpun/seasons/_steady-state*
 .rumpun/seasons/_competition.yaml
+__pycache__/
+*.pyc

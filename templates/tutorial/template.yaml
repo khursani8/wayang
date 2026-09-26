@@ -144,7 +144,7 @@ settings:
     width: 1920
     height: 1080
     fps: 30
-    playback_rate: 1.2
+    playback_rate: 0.9
   background: slate
   font:
     family: "M PLUS Rounded 1c"

@@ -59,6 +59,7 @@ const script = project.script || [];
 const settings = project.settings || {};
 const vendorCfg = (project.vendor && project.vendor.hyperframes) || {};
 const cps = vendorCfg.estimate_cps ?? 7.5;
+const playbackRate = settings.video?.playback_rate ?? 1;
 const fps = settings.video?.fps ?? 30;
 const W = settings.video?.width ?? 1920;
 const H = settings.video?.height ?? 1080;
@@ -104,10 +105,11 @@ let t = 0;
 const timeline = [];
 for (const line of script) {
   const file = `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
-  const dur = voiceSeconds ? voiceSeconds[file] : Math.max(0.8, String(line.text).replace(/\s+/g, "").length / cps);
+  const raw = voiceSeconds ? voiceSeconds[file] : Math.max(0.8, String(line.text).replace(/\s+/g, "").length / cps);
+  const dur = raw / playbackRate;
   const pause = pauseOf(line);
-  timeline.push({ line, file, start: t, dur, end: t + dur, subEnd: t + dur + pause });
-  t += dur + pause;
+  timeline.push({ line, file, start: t, dur, end: t + dur, subEnd: t + dur + pause / playbackRate });
+  t += dur + pause / playbackRate;
 }
 const total = +(t + 2).toFixed(3);
 
@@ -257,7 +259,7 @@ for (const seg of timeline) {
   const line = seg.line;
   const text = line.display_text || line.text;
   idSeq += 1;
-  clips.push(`    <audio class="clip" id="line-${line.id}-audio" src="voices/${seg.file}" data-start="${seg.start.toFixed(3)}" data-duration="${seg.dur.toFixed(3)}" data-track-index="20"></audio>`);
+  clips.push(`    <audio class="clip" id="line-${line.id}-audio" src="voices/${seg.file}" data-start="${seg.start.toFixed(3)}" data-duration="${seg.dur.toFixed(3)}" data-playback-rate="${playbackRate}" data-track-index="20"></audio>`);
   if (line.se) {
     const seAbs = path.join(projectDir, line.se.src);
     const seWork = path.join(workDir, line.se.src);

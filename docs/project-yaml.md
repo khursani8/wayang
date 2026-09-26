@@ -12,7 +12,8 @@ seconds everywhere; vendors convert to their own units.
 - `script`: ordered lines. text (spoken), display_text (subtitle
   override), scene, pause_after (seconds), emotion, visual (text/image
   card), se.
-- `settings`: video (width, height, fps, playback_rate), font, subtitle,
+- `settings`: video (width, height, fps, playback_rate - slows voice and
+  pacing; 0.9 is a good tutorial pace), font, subtitle,
   character, content, background (theme name from assets/backgrounds/ or a
   project assets/background.png override).
 

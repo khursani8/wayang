@@ -51,6 +51,10 @@ playback, durations from the manifest, build log names the engines;
 (2) estimate from character count (`estimate_cps`), silent. Never mixed.
 `playback_rate` is ignored by this vendor (audio plays at natural speed).
 
+`settings.video.playback_rate` is honored: voice clips play at the rate
+(data-playback-rate) and pauses plus the timeline scale to match.
+0.9 gives a slower, calmer tutorial pace.
+
 Lip flap: while a character speaks, mouth_open/mouth_close art alternates
 every 0.2s (needs `settings.character.use_images: true` and art under
 `assets/images/<id>/`); placeholder boxes do not flap.

@@ -46,4 +46,4 @@ Bahasa Malaysia content.
 - Per-engine quirks: `vendors/<engine>/AGENTS.md`
 - YAML reference: `docs/project-yaml.md`
 - Join as a vendor: `docs/vendor-contract.md`
-- Art generators: `assets/` (mascots, background themes)
+- Art generators + how the mascots are made: `docs/mascot-art.md`

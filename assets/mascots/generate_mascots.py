@@ -1,21 +1,36 @@
-"""Generate 4 mascot PNGs (Momo tapir, Kiki hornbill) with open/closed mouths.
+"""Generate mascot PNGs (Momo tapir, Kiki hornbill): base mouths + emotion variants.
 
 The _open and _close variants of a character share one SVG template; only the
 mouth group string is swapped, so every other pixel is guaranteed identical.
 Renders 1024x1024 PNGs with cairosvg and verifies the pixel diff bbox.
+
+Emotion variants (happy, surprised, thinking, sad) for both characters are
+rendered to /tmp/mascot-art/emotions/ the same way (identical body, swapped
+eye/brow + mouth groups), pair-verified against each other and against the
+base art, then deployed into the template and demo-project asset directories.
 """
 
 import logging
 import os
+import shutil
 import tempfile
 from pathlib import Path
 
 import cairosvg
 
 OUT_DIR = Path("/tmp/mascot-art")
+EMO_DIR = Path("/tmp/mascot-art/emotions")
+ART_ROOT = Path("/mnt/data/work/content_engine")
+TEMPLATE_NAMES = ("dialog", "presentation", "storytelling", "community")
+EMOTIONS = ("happy", "surprised", "thinking", "sad")
 SIZE = 1024
 OUTLINE = "#1C1C22"
 CREAM = "#F7F3E8"
+
+# open/close diff must stay inside the mouth box; emotion-vs-base diff must
+# stay inside the whole face box (eyes, brows, mouth).
+EMO_DIFF_BOX = {"momo": (396, 484, 628, 636), "kiki": (404, 396, 620, 566)}
+FACE_BOX = {"momo": (336, 248, 688, 644), "kiki": (330, 184, 694, 564)}
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,7 +72,22 @@ def momo_mouth_close() -> str:
     )
 
 
-def momo_body(mouth: str) -> str:
+def momo_eyes_default() -> str:
+    return (
+        '<ellipse cx="418" cy="362" rx="40" ry="50" fill="#FFFFFF"/>'
+        '<ellipse cx="606" cy="362" rx="40" ry="50" fill="#FFFFFF"/>'
+        '<circle cx="418" cy="366" r="21" fill="#262626"/>'
+        '<circle cx="606" cy="366" r="21" fill="#262626"/>'
+        '<circle cx="427" cy="352" r="9" fill="#FFFFFF"/>'
+        '<circle cx="615" cy="352" r="9" fill="#FFFFFF"/>'
+        '<circle cx="408" cy="376" r="4" fill="#FFFFFF"/>'
+        '<circle cx="596" cy="376" r="4" fill="#FFFFFF"/>'
+    )
+
+
+def momo_body(mouth: str, eyes: str | None = None) -> str:
+    if eyes is None:
+        eyes = momo_eyes_default()
     parts = [
         # stubby tail (behind body)
         f'<circle cx="718" cy="768" r="42" fill="#2F2F38" stroke="{OUTLINE}" stroke-width="12"/>',
@@ -96,14 +126,7 @@ def momo_body(mouth: str) -> str:
         '<ellipse cx="474" cy="468" rx="11" ry="16" fill="#262626"/>',
         '<ellipse cx="550" cy="468" rx="11" ry="16" fill="#262626"/>',
         # eyes
-        '<ellipse cx="418" cy="362" rx="40" ry="50" fill="#FFFFFF"/>',
-        '<ellipse cx="606" cy="362" rx="40" ry="50" fill="#FFFFFF"/>',
-        '<circle cx="418" cy="366" r="21" fill="#262626"/>',
-        '<circle cx="606" cy="366" r="21" fill="#262626"/>',
-        '<circle cx="427" cy="352" r="9" fill="#FFFFFF"/>',
-        '<circle cx="615" cy="352" r="9" fill="#FFFFFF"/>',
-        '<circle cx="408" cy="376" r="4" fill="#FFFFFF"/>',
-        '<circle cx="596" cy="376" r="4" fill="#FFFFFF"/>',
+        eyes,
         # blush
         '<ellipse cx="352" cy="462" rx="42" ry="24" fill="#EFA3AC" opacity="0.55"/>',
         '<ellipse cx="672" cy="462" rx="42" ry="24" fill="#EFA3AC" opacity="0.55"/>',
@@ -155,7 +178,30 @@ def kiki_mouth_close() -> str:
     )
 
 
-def kiki_body(mouth: str) -> str:
+def kiki_eyes_base() -> str:
+    return (
+        '<ellipse cx="402" cy="322" rx="42" ry="54" fill="#FFFFFF"/>'
+        '<ellipse cx="622" cy="322" rx="42" ry="54" fill="#FFFFFF"/>'
+        '<circle cx="402" cy="326" r="22" fill="#262626"/>'
+        '<circle cx="622" cy="326" r="22" fill="#262626"/>'
+        '<circle cx="411" cy="310" r="10" fill="#FFFFFF"/>'
+        '<circle cx="631" cy="310" r="10" fill="#FFFFFF"/>'
+        '<circle cx="392" cy="338" r="4" fill="#FFFFFF"/>'
+        '<circle cx="612" cy="338" r="4" fill="#FFFFFF"/>'
+    )
+
+
+def kiki_eyes_default() -> str:
+    return (
+        kiki_eyes_base()
+        + f'<path d="M 366 280 Q 354 266 342 260 M 384 270 Q 378 252 368 244" stroke="{OUTLINE}" stroke-width="8" fill="none"/>'
+        + f'<path d="M 658 280 Q 670 266 682 260 M 640 270 Q 646 252 656 244" stroke="{OUTLINE}" stroke-width="8" fill="none"/>'
+    )
+
+
+def kiki_body(mouth: str, eyes: str | None = None) -> str:
+    if eyes is None:
+        eyes = kiki_eyes_default()
     parts = [
         '<g transform="translate(0 -24)">',
         # white tail fan (behind everything)
@@ -191,21 +237,304 @@ def kiki_body(mouth: str) -> str:
         f'Q 544 330 556 382 Z" fill="#E8862B" stroke="{OUTLINE}" stroke-width="12"/>',
         mouth,
         # eyes (hornbill lashes)
-        '<ellipse cx="402" cy="322" rx="42" ry="54" fill="#FFFFFF"/>',
-        '<ellipse cx="622" cy="322" rx="42" ry="54" fill="#FFFFFF"/>',
-        '<circle cx="402" cy="326" r="22" fill="#262626"/>',
-        '<circle cx="622" cy="326" r="22" fill="#262626"/>',
-        '<circle cx="411" cy="310" r="10" fill="#FFFFFF"/>',
-        '<circle cx="631" cy="310" r="10" fill="#FFFFFF"/>',
-        '<circle cx="392" cy="338" r="4" fill="#FFFFFF"/>',
-        '<circle cx="612" cy="338" r="4" fill="#FFFFFF"/>',
-        f'<path d="M 366 280 Q 354 266 342 260 M 384 270 Q 378 252 368 244" stroke="{OUTLINE}" stroke-width="8" fill="none"/>',
-        f'<path d="M 658 280 Q 670 266 682 260 M 640 270 Q 646 252 656 244" stroke="{OUTLINE}" stroke-width="8" fill="none"/>',
+        eyes,
         "</g>",
     ]
     return "".join(parts)
 
 
+# -------------------------------------------------------------- emotion variants
+def _brow(d: str) -> str:
+    return f'<path d="{d}" fill="none" stroke="{OUTLINE}" stroke-width="10"/>'
+
+
+def _arc(d: str) -> str:
+    return f'<path d="{d}" fill="none" stroke="{OUTLINE}" stroke-width="14"/>'
+
+
+def momo_eyes_happy() -> str:
+    return _arc("M 376 372 Q 418 330 460 372") + _arc("M 564 372 Q 606 330 648 372")
+
+
+def momo_eyes_surprised() -> str:
+    return (
+        momo_eyes_default()
+        + _brow("M 366 286 Q 416 262 466 284")
+        + _brow("M 558 284 Q 608 262 658 286")
+    )
+
+
+def momo_eyes_thinking() -> str:
+    return (
+        '<ellipse cx="418" cy="362" rx="40" ry="50" fill="#FFFFFF"/>'
+        '<ellipse cx="606" cy="362" rx="40" ry="50" fill="#FFFFFF"/>'
+        '<circle cx="429" cy="357" r="21" fill="#262626"/>'
+        '<circle cx="617" cy="357" r="21" fill="#262626"/>'
+        '<circle cx="436" cy="344" r="9" fill="#FFFFFF"/>'
+        '<circle cx="624" cy="344" r="9" fill="#FFFFFF"/>'
+        '<circle cx="417" cy="368" r="4" fill="#FFFFFF"/>'
+        '<circle cx="605" cy="368" r="4" fill="#FFFFFF"/>'
+        + _brow("M 370 300 Q 418 292 466 300")
+        + _brow("M 558 272 Q 608 260 658 272")
+    )
+
+
+def momo_eyes_sad() -> str:
+    return (
+        momo_eyes_default()
+        + _brow("M 462 282 Q 412 288 368 306")
+        + _brow("M 562 306 Q 606 288 656 282")
+    )
+
+
+def momo_happy_open() -> str:
+    return (
+        '<clipPath id="momo-happy-clip">'
+        '<path d="M 432 516 Q 512 498 592 516 Q 588 566 512 582 Q 436 566 432 516 Z"/>'
+        "</clipPath>"
+        '<path d="M 432 516 Q 512 498 592 516 Q 588 566 512 582 Q 436 566 432 516 Z" '
+        f'fill="#7A3B44" stroke="{OUTLINE}" stroke-width="11"/>'
+        '<g clip-path="url(#momo-happy-clip)">'
+        '<rect x="492" y="512" width="40" height="16" rx="8" fill="#FFFFFF"/>'
+        '<ellipse cx="512" cy="596" rx="36" ry="18" fill="#E98A96"/></g>'
+    )
+
+
+def momo_happy_close() -> str:
+    return (
+        '<path d="M 436 536 Q 512 590 588 536" fill="none" '
+        f'stroke="{OUTLINE}" stroke-width="11"/>'
+    )
+
+
+def momo_surprised_open() -> str:
+    return (
+        '<clipPath id="momo-surprised-clip">'
+        '<ellipse cx="512" cy="550" rx="44" ry="44"/></clipPath>'
+        '<ellipse cx="512" cy="550" rx="44" ry="44" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="11"/>'
+        '<g clip-path="url(#momo-surprised-clip)">'
+        '<ellipse cx="512" cy="576" rx="26" ry="16" fill="#E98A96"/></g>'
+    )
+
+
+def momo_surprised_close() -> str:
+    return (
+        '<ellipse cx="512" cy="552" rx="13" ry="15" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="8"/>'
+    )
+
+
+def momo_thinking_open() -> str:
+    return (
+        '<ellipse cx="512" cy="544" rx="32" ry="11" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="9"/>'
+    )
+
+
+def momo_thinking_close() -> str:
+    return '<path d="M 476 544 L 548 544" fill="none" ' f'stroke="{OUTLINE}" stroke-width="9"/>'
+
+
+def momo_sad_open() -> str:
+    return (
+        '<path d="M 448 578 Q 512 546 576 578 Q 550 592 512 594 Q 474 592 448 578 Z" '
+        f'fill="#7A3B44" stroke="{OUTLINE}" stroke-width="11"/>'
+    )
+
+
+def momo_sad_close() -> str:
+    return '<path d="M 456 566 Q 512 550 568 566" fill="none" ' f'stroke="{OUTLINE}" stroke-width="10"/>'
+
+
+def kiki_eyes_happy() -> str:
+    return _arc("M 362 330 Q 402 288 442 330") + _arc("M 582 330 Q 622 288 662 330")
+
+
+def kiki_eyes_surprised() -> str:
+    return (
+        kiki_eyes_base()
+        + _brow("M 346 250 Q 400 226 454 248")
+        + _brow("M 570 248 Q 624 226 678 250")
+    )
+
+
+def kiki_eyes_thinking() -> str:
+    return (
+        '<ellipse cx="402" cy="322" rx="42" ry="54" fill="#FFFFFF"/>'
+        '<ellipse cx="622" cy="322" rx="42" ry="54" fill="#FFFFFF"/>'
+        '<circle cx="414" cy="314" r="22" fill="#262626"/>'
+        '<circle cx="634" cy="314" r="22" fill="#262626"/>'
+        '<circle cx="423" cy="298" r="10" fill="#FFFFFF"/>'
+        '<circle cx="643" cy="298" r="10" fill="#FFFFFF"/>'
+        '<circle cx="404" cy="326" r="4" fill="#FFFFFF"/>'
+        '<circle cx="624" cy="326" r="4" fill="#FFFFFF"/>'
+        + _brow("M 348 256 Q 400 246 452 256")
+        + _brow("M 572 234 Q 624 220 676 236")
+    )
+
+
+def kiki_eyes_sad() -> str:
+    return (
+        kiki_eyes_base()
+        + _brow("M 450 242 Q 396 250 350 270")
+        + _brow("M 574 270 Q 628 250 674 242")
+    )
+
+
+def kiki_surprised_open() -> str:
+    d = "M 434 440 Q 512 474 590 440 Q 602 520 512 552 Q 422 520 434 440 Z"
+    return (
+        f'<clipPath id="kiki-surprised-clip"><path d="{d}"/></clipPath>'
+        f'<path d="{d}" fill="#7A3B44" stroke="{OUTLINE}" stroke-width="10"/>'
+        '<g clip-path="url(#kiki-surprised-clip)">'
+        '<ellipse cx="512" cy="524" rx="34" ry="18" fill="#E98A96"/></g>'
+        + kiki_beak_lower(0, 56)
+        + kiki_beak_upper()
+    )
+
+
+def kiki_surprised_close() -> str:
+    return (
+        kiki_beak_lower()
+        + kiki_beak_upper()
+        + '<ellipse cx="512" cy="494" rx="13" ry="15" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="8"/>'
+    )
+
+
+def kiki_thinking_open() -> str:
+    return (
+        kiki_beak_lower()
+        + kiki_beak_upper()
+        + '<ellipse cx="512" cy="486" rx="34" ry="8" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="8"/>'
+    )
+
+
+def kiki_thinking_close() -> str:
+    return (
+        kiki_beak_lower()
+        + kiki_beak_upper()
+        + '<path d="M 478 486 L 546 486" fill="none" '
+        f'stroke="{OUTLINE}" stroke-width="9"/>'
+    )
+
+
+def kiki_sad_open() -> str:
+    return (
+        kiki_beak_lower()
+        + kiki_beak_upper()
+        + '<path d="M 462 500 Q 512 478 562 500" fill="none" '
+        f'stroke="{OUTLINE}" stroke-width="10"/>'
+    )
+
+
+def kiki_sad_close() -> str:
+    return (
+        kiki_beak_lower()
+        + kiki_beak_upper()
+        + '<path d="M 466 498 Q 512 490 558 498" fill="none" '
+        f'stroke="{OUTLINE}" stroke-width="9"/>'
+    )
+
+
+MOMO_EYES = {
+    "happy": momo_eyes_happy,
+    "surprised": momo_eyes_surprised,
+    "thinking": momo_eyes_thinking,
+    "sad": momo_eyes_sad,
+}
+MOMO_MOUTHS = {
+    "happy": (momo_happy_open, momo_happy_close),
+    "surprised": (momo_surprised_open, momo_surprised_close),
+    "thinking": (momo_thinking_open, momo_thinking_close),
+    "sad": (momo_sad_open, momo_sad_close),
+}
+KIKI_EYES = {
+    "happy": kiki_eyes_happy,
+    "surprised": kiki_eyes_surprised,
+    "thinking": kiki_eyes_thinking,
+    "sad": kiki_eyes_sad,
+}
+KIKI_MOUTHS = {
+    "happy": (kiki_mouth_open, kiki_mouth_close),
+    "surprised": (kiki_surprised_open, kiki_surprised_close),
+    "thinking": (kiki_thinking_open, kiki_thinking_close),
+    "sad": (kiki_sad_open, kiki_sad_close),
+}
+
+
+def emotion_body(character: str, emotion: str, state: str) -> str:
+    """Same body as the base art; only the expression groups change."""
+    eyes = (MOMO_EYES if character == "momo" else KIKI_EYES)[emotion]()
+    mouths = (MOMO_MOUTHS if character == "momo" else KIKI_MOUTHS)[emotion]
+    mouth = mouths[0 if state == "open" else 1]()
+    if character == "momo":
+        return svg_wrap(momo_body(mouth, eyes), None)
+    return svg_wrap(kiki_body(mouth, eyes), None)
+
+
+def check_frame(path: Path) -> None:
+    """1024x1024 with transparent corners, like the base presentation check."""
+    from PIL import Image  # noqa: PLC0415
+
+    img = Image.open(path).convert("RGBA")
+    if img.size != (SIZE, SIZE):
+        raise RuntimeError(f"{path.name}: wrong size {img.size}")
+    px = img.load()
+    corners = [px[5, 5], px[SIZE - 6, 5], px[5, SIZE - 6], px[SIZE - 6, SIZE - 6]]
+    if any(c[3] != 0 for c in corners):
+        raise RuntimeError(f"{path.name}: corners not transparent: {corners}")
+
+
+def generate_emotions() -> None:
+    EMO_DIR.mkdir(parents=True, exist_ok=True)
+    for character in ("momo", "kiki"):
+        base_open = OUT_DIR / f"{character}_open.png"
+        base_close = OUT_DIR / f"{character}_close.png"
+        for emotion in EMOTIONS:
+            frames = {}
+            for state in ("open", "close"):
+                filename = f"{character}_{emotion}_{state}.png"
+                svg_str = emotion_body(character, emotion, state)
+                svg_path = EMO_DIR / filename.replace(".png", ".svg")
+                svg_path.write_text(svg_str, encoding="utf-8")
+                out_path = EMO_DIR / filename
+                render(svg_str, out_path)
+                check_frame(out_path)
+                frames[state] = out_path
+            verify_pair(
+                frames["open"], frames["close"],
+                EMO_DIFF_BOX[character], f"{character}-{emotion}",
+            )
+            verify_pair(
+                frames["open"], base_open,
+                FACE_BOX[character], f"{character}-{emotion}-open-vs-base",
+            )
+            verify_pair(
+                frames["close"], base_close,
+                FACE_BOX[character], f"{character}-{emotion}-close-vs-base",
+            )
+
+
+def deploy_emotions() -> None:
+    roots = [ART_ROOT / "templates" / name / "assets" / "images" for name in TEMPLATE_NAMES]
+    roots.append(ART_ROOT / "projects" / "hf-demo" / "assets" / "images")
+    copied = 0
+    for character in ("momo", "kiki"):
+        for emotion in EMOTIONS:
+            for state in ("open", "close"):
+                src = EMO_DIR / f"{character}_{emotion}_{state}.png"
+                for root in roots:
+                    dest_dir = root / character
+                    dest_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(src, dest_dir / f"{emotion}_{state}.png")
+                    copied += 1
+    logger.info("deployed %d emotion PNGs to %d asset roots", copied, len(roots))
+
+
+# --------------------------------------------------------------------- pipeline
 def render(svg_str: str, path: Path) -> None:
     png = cairosvg.svg2png(
         bytestring=svg_str.encode("utf-8"),
@@ -225,7 +554,7 @@ def render(svg_str: str, path: Path) -> None:
 
 
 def verify_pair(open_png: Path, close_png: Path, box: tuple[int, int, int, int], name: str) -> None:
-    """Assert the open/close pair differs only inside the mouth region."""
+    """Assert the two images differ only inside the given region box."""
     from PIL import Image  # noqa: PLC0415
 
     a = Image.open(open_png).convert("RGBA")
@@ -245,18 +574,18 @@ def verify_pair(open_png: Path, close_png: Path, box: tuple[int, int, int, int],
             if row_a[i : i + 4] != row_b[i : i + 4]:
                 diff.add((x, y))
     if not diff:
-        raise RuntimeError(f"{name}: open and close images are identical, mouth did not change")
+        raise RuntimeError(f"{name}: images are identical, nothing changed")
     xs = [p[0] for p in diff]
     ys = [p[1] for p in diff]
     bbox = (min(xs), min(ys), max(xs), max(ys))
     x0, y0, x1, y1 = box
     inside = x0 <= bbox[0] and bbox[2] <= x1 and y0 <= bbox[1] and bbox[3] <= y1
     logger.info(
-        "%s: %d differing pixels, bbox=%s, confined to mouth region %s -> %s",
+        "%s: %d differing pixels, bbox=%s, confined to %s -> %s",
         name, len(diff), bbox, box, "PASS" if inside else "FAIL",
     )
     if not inside:
-        raise RuntimeError(f"{name}: changes leak outside the mouth region: bbox={bbox}")
+        raise RuntimeError(f"{name}: changes leak outside the region: bbox={bbox}")
 
 
 def check_presentation() -> None:
@@ -341,7 +670,12 @@ def main() -> None:
         (340, 360, 684, 620), "kiki",
     )
     check_presentation()
-    logger.info("done: 4 PNGs in %s", OUT_DIR)
+    generate_emotions()
+    deploy_emotions()
+    logger.info(
+        "done: 4 base PNGs in %s, 16 emotion PNGs in %s, deployed to templates + demo",
+        OUT_DIR, EMO_DIR,
+    )
 
 
 if __name__ == "__main__":

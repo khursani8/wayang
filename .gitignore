@@ -8,3 +8,4 @@ out/
 .rumpun/seasons/_competition.yaml
 __pycache__/
 *.pyc
+.omc/

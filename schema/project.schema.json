@@ -200,7 +200,8 @@
               "type": "string",
               "enum": [
                 "voicevox",
-                "openai"
+                "openai",
+                "revolab"
               ]
             }
           },
@@ -272,6 +273,45 @@
                 },
                 "required": [
                   "voice"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "engine": {
+                    "const": "revolab"
+                  }
+                },
+                "required": [
+                  "engine"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "engine": {
+                    "type": "string",
+                    "enum": [
+                      "voicevox",
+                      "openai",
+                      "revolab"
+                    ]
+                  },
+                  "voice_id": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "speed": {
+                    "type": "number",
+                    "minimum": 0.25,
+                    "maximum": 4
+                  }
+                },
+                "required": [
+                  "voice_id"
                 ],
                 "additionalProperties": false
               }

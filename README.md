@@ -19,7 +19,9 @@ Output: `projects/<name>/out/video.mp4`.
 
 The repo owns no services. TTS is API-based and user-configured:
 `voicevox` (your own endpoint, default localhost:50021, override with
-VOICEVOX_HOST) and `openai` (needs OPENAI_API_KEY). `ce.py tts` writes one
+VOICEVOX_HOST), `openai` (needs OPENAI_API_KEY) and `revolab` (needs
+REVOLAB_API_KEY, default model nada-1.0-pro, voice ids from GET /v1/voices).
+`ce.py tts` writes one
 wav per script line into `projects/<name>/voices/`; renders use those files
 when complete, VOICEVOX next, estimated timing with silent audio last. The
 build log states which source was used. New engines go in

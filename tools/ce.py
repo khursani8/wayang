@@ -97,8 +97,8 @@ def validate_project(pdir: Path) -> dict:
         if se and not (pdir / se["src"]).is_file():
             fail(f"script id {line['id']}: sound effect missing: {se['src']}")
     for cid, c in chars.items():
-        if c["voice"]["engine"] != "voicevox":
-            fail(f"character {cid}: unsupported voice engine '{c['voice']['engine']}'")
+        if c["voice"]["engine"] not in PROVIDERS:
+            fail(f"character {cid}: unsupported voice engine '{c['voice']['engine']}' (known: {', '.join(sorted(PROVIDERS))})")
         img = c.get("image")
         if img and not (pdir / img).is_file():
             fail(f"character {cid}: image missing: {img}")

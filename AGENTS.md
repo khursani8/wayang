@@ -51,6 +51,8 @@ The repo owns no services. TTS engines are API clients the user configures:
 - `voicevox`: your own VOICEVOX endpoint (default http://localhost:50021,
   override with VOICEVOX_HOST).
 - `openai`: OpenAI text-to-speech API, needs OPENAI_API_KEY.
+- `revolab`: api.revolab.ai text-to-speech, needs REVOLAB_API_KEY.
+  Model default nada-1.0-pro; voice ids from GET /v1/voices.
 
 `ce.py tts <project>` (also run by `ce.py render`) writes one wav per script
 line into `projects/<name>/voices/` plus `manifest.json` (hash, seconds,

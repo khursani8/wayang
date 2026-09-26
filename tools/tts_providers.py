@@ -114,4 +114,43 @@ class OpenAIProvider:
         out_path.write_bytes(audio)
 
 
-PROVIDERS = {p.name: p for p in (VoicevoxProvider(), OpenAIProvider())}
+class RevolabProvider:
+    name = "revolab"
+    ENDPOINT = "https://api.revolab.ai/v1/tts"
+
+    def available(self):
+        if os.environ.get("REVOLAB_API_KEY"):
+            return True, ""
+        return False, "REVOLAB_API_KEY is not set"
+
+    def config_hash(self, cfg: dict) -> dict:
+        return {k: cfg.get(k) for k in ("voice_id", "model", "speed")}
+
+    def synthesize(self, text: str, cfg: dict, out_path) -> None:
+        payload = {
+            "model": cfg.get("model", "nada-1.0-pro"),
+            "text": text,
+            "voice_id": cfg["voice_id"],
+        }
+        if cfg.get("speed") is not None:
+            payload["speed"] = cfg["speed"]
+        req = urllib.request.Request(
+            self.ENDPOINT,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {os.environ['REVOLAB_API_KEY']}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                audio = resp.read()
+        except urllib.error.HTTPError as e:
+            raise ProviderError(f"revolab http {e.code}: {e.read().decode(errors='replace')[:300]}") from e
+        except urllib.error.URLError as e:
+            raise ProviderError(f"revolab tts connection error: {e.reason}") from e
+        out_path.write_bytes(audio)
+
+
+PROVIDERS = {p.name: p for p in (VoicevoxProvider(), OpenAIProvider(), RevolabProvider())}

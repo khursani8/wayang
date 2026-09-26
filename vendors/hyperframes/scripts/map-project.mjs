@@ -273,27 +273,36 @@ for (const seg of timeline) {
   if (v && v.type === "terminal") {
     if (!v.command) die(`script id ${line.id}: terminal visual needs a command`);
     const outs = Array.isArray(v.output) ? v.output : [];
+    const termFs = 34;
+    const outFs = 30;
+    const innerW = W * 0.76 - 56;
+    const charsPerLine = Math.max(20, Math.floor(innerW / (termFs * 0.62)));
+    const cmdLines = Math.max(1, Math.ceil(v.command.length / charsPerLine));
+    const minH = 30 + Math.round((cmdLines + outs.length) * termFs * 1.7);
     idSeq += 1;
     const cmdId = `cmd-${idSeq}`;
-    const caretId = `caret-${idSeq}`;
-    const minH = 100 + (outs.length + 1) * 42;
     let inner =
-      `<div style="background:#161B22;padding:10px 16px;display:flex;gap:8px;align-items:center">` +
-      `<span style="width:12px;height:12px;border-radius:50%;background:#FF5F56"></span>` +
-      `<span style="width:12px;height:12px;border-radius:50%;background:#FFBD2E"></span>` +
-      `<span style="width:12px;height:12px;border-radius:50%;background:#27C93F"></span>` +
-      `<span style="color:#8B949E;font-size:18px;margin-left:10px">wayang</span></div>` +
-      `<div style="padding:18px 24px;font-size:24px;line-height:1.6;color:#C9D1D9;text-align:left;min-height:${minH}px">` +
-      `<div><span style="color:#7EE787">$ </span><span id="${cmdId}" style="clip-path:inset(0 100% 0 0);white-space:nowrap">${esc(v.command)}</span><span id="${caretId}" style="color:#7EE787">▌</span></div>`;
-    outs.forEach((o, i) => {
-      const oid = `out-${idSeq}-${i}`;
-      inner += `<div id="${oid}" style="opacity:0;color:#8B949E;margin-top:8px;white-space:pre-wrap">${esc(o)}</div>`;
-      tweenLines.push(`tl.to("#${oid}", { opacity: 1, duration: 0.15 }, ${(seg.start + 0.9 + i * 0.4).toFixed(3)});`);
+      `<div style="background:#161B22;padding:12px 18px;display:flex;gap:9px;align-items:center">` +
+      `<span style="width:13px;height:13px;border-radius:50%;background:#FF5F56"></span>` +
+      `<span style="width:13px;height:13px;border-radius:50%;background:#FFBD2E"></span>` +
+      `<span style="width:13px;height:13px;border-radius:50%;background:#27C93F"></span>` +
+      `<span style="color:#8B949E;font-size:20px;margin-left:10px">wayang</span></div>` +
+      `<div style="padding:22px 28px;font-size:${termFs}px;line-height:1.55;color:#C9D1D9;text-align:left;overflow-wrap:anywhere">` +
+      `<div><span style="color:#7EE787">$ </span>`;
+    const cmdChars = [...String(v.command)];
+    cmdChars.forEach((ch) => {
+      inner += `<span class="ch" style="opacity:0">${esc(ch)}</span>`;
     });
     inner += `</div>`;
-    const typeDur = Math.min(1.2, Math.max(0.5, v.command.length * 0.045));
-    tweenLines.push(`tl.to("#${cmdId}", { clipPath: "inset(0 0% 0 0)", duration: ${typeDur.toFixed(2)}, ease: "none" }, ${(seg.start + 0.35).toFixed(3)});`);
-    tweenLines.push(`tl.to("#${caretId}", { opacity: 0 }, ${(seg.start + 0.35 + typeDur).toFixed(3)});`);
+    outs.forEach((o, i) => {
+      const oid = `out-${idSeq}-${i}`;
+      inner += `<div id="${oid}" style="opacity:0;color:#9EAEBC;margin-top:12px;font-size:${outFs}px;white-space:pre-wrap">${esc(o)}</div>`;
+      tweenLines.push(`tl.to("#${oid}", { opacity: 1, duration: 0.18 }, ${(seg.start + 0.9 + i * 0.5).toFixed(3)});`);
+    });
+    inner += `</div>`;
+    const typeStart = seg.start + 0.35;
+    const typeDur = Math.min(1.6, Math.max(0.6, cmdChars.length * 0.035));
+    tweenLines.push(`tl.to("#${cmdId} .ch", { opacity: 1, duration: 0.02, stagger: ${(typeDur / cmdChars.length).toFixed(4)}, ease: "none" }, ${typeStart.toFixed(3)});`);
     clips.push(clip(inner, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
   } else if (v && v.type === "image" && v.src) {
     const maxH = v.font_size ? Math.min(v.font_size, H * 0.45) : H * 0.45;

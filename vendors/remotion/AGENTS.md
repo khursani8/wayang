@@ -112,6 +112,8 @@ placeholder wavs. Never mixed in one project.
 
 ## Environment
 
-- Node 24, npm. One-time `npm install` already done in `engine/`
-  (node_modules is shared via symlink).
+- Node 24, npm. A fresh clone needs a one-time `npm install` inside
+  `engine/` (the build symlinks that node_modules into its workdir).
+- `ffprobe` on PATH for the duration guard (skipped with a warning when
+  absent).
 - VOICEVOX engine at localhost:50021 optional; see timing section.

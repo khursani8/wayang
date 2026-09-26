@@ -24,13 +24,14 @@ logging.basicConfig(
 logger = logging.getLogger("mascots")
 
 
-def svg_wrap(body: str, bg: str) -> str:
+def svg_wrap(body: str, bg: str | None) -> str:
+    """bg=None renders a transparent background (alpha PNG)."""
+    bg_rect = f'<rect width="{SIZE}" height="{SIZE}" fill="{bg}"/>' if bg else ""
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{SIZE}" height="{SIZE}" '
         f'viewBox="0 0 {SIZE} {SIZE}">'
         f'<g stroke-linecap="round" stroke-linejoin="round">'
-        f'<rect width="{SIZE}" height="{SIZE}" fill="{bg}"/>'
-        f"{body}</g></svg>"
+        f"{bg_rect}{body}</g></svg>"
     )
 
 
@@ -227,21 +228,21 @@ def verify_pair(open_png: Path, close_png: Path, box: tuple[int, int, int, int],
     """Assert the open/close pair differs only inside the mouth region."""
     from PIL import Image  # noqa: PLC0415
 
-    a = Image.open(open_png).convert("RGB")
-    b = Image.open(close_png).convert("RGB")
+    a = Image.open(open_png).convert("RGBA")
+    b = Image.open(close_png).convert("RGBA")
     if a.size != b.size:
         raise RuntimeError(f"{name}: size mismatch {a.size} vs {b.size}")
     diff = set()
     pa, pb = a.tobytes(), b.tobytes()
     w, h = a.size
     for y in range(h):
-        row_a = pa[y * w * 3 : (y + 1) * w * 3]
-        row_b = pb[y * w * 3 : (y + 1) * w * 3]
+        row_a = pa[y * w * 4 : (y + 1) * w * 4]
+        row_b = pb[y * w * 4 : (y + 1) * w * 4]
         if row_a == row_b:
             continue
         for x in range(w):
-            i = x * 3
-            if row_a[i : i + 3] != row_b[i : i + 3]:
+            i = x * 4
+            if row_a[i : i + 4] != row_b[i : i + 4]:
                 diff.add((x, y))
     if not diff:
         raise RuntimeError(f"{name}: open and close images are identical, mouth did not change")
@@ -263,25 +264,24 @@ def check_presentation() -> None:
     from PIL import Image  # noqa: PLC0415
 
     expected = {
-        "momo": ("#CFE9B8", (430, 510, 595, 600)),
-        "kiki": ("#C3DCF2", (420, 410, 610, 545)),
+        "momo": (430, 510, 595, 600),
+        "kiki": (420, 410, 610, 545),
     }
-    for name, (bg_hex, mbox) in expected.items():
-        bg = tuple(int(bg_hex[i : i + 2], 16) for i in (1, 3, 5))
+    for name, mbox in expected.items():
         for variant in ("open", "close"):
             path = OUT_DIR / f"{name}_{variant}.png"
-            img = Image.open(path).convert("RGB")
+            img = Image.open(path).convert("RGBA")
             if img.size != (SIZE, SIZE):
                 raise RuntimeError(f"{path.name}: wrong size {img.size}")
             px = img.load()
             corners = [px[5, 5], px[SIZE - 6, 5], px[5, SIZE - 6], px[SIZE - 6, SIZE - 6]]
-            if any(c != bg for c in corners):
-                raise RuntimeError(f"{path.name}: background corners {corners} != {bg}")
-            # ink bbox: anything that is not the flat background
+            if any(c[3] != 0 for c in corners):
+                raise RuntimeError(f"{path.name}: corners not transparent: {corners}")
+            # ink bbox: any pixel with alpha
             xs, ys = [], []
             for y in range(0, SIZE, 2):
                 for x in range(0, SIZE, 2):
-                    if px[x, y] != bg:
+                    if px[x, y][3] > 0:
                         xs.append(x)
                         ys.append(y)
             bbox = (min(xs), min(ys), max(xs), max(ys))
@@ -322,14 +322,14 @@ def check_presentation() -> None:
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     jobs = [
-        ("momo_open.png", momo_body(momo_mouth_open()), "#CFE9B8"),
-        ("momo_close.png", momo_body(momo_mouth_close()), "#CFE9B8"),
-        ("kiki_open.png", kiki_body(kiki_mouth_open()), "#C3DCF2"),
-        ("kiki_close.png", kiki_body(kiki_mouth_close()), "#C3DCF2"),
+        ("momo_open.png", momo_body(momo_mouth_open())),
+        ("momo_close.png", momo_body(momo_mouth_close())),
+        ("kiki_open.png", kiki_body(kiki_mouth_open())),
+        ("kiki_close.png", kiki_body(kiki_mouth_close())),
     ]
-    for filename, body, bg in jobs:
+    for filename, body in jobs:
         svg_path = OUT_DIR / filename.replace(".png", ".svg")
-        svg_str = svg_wrap(body, bg)
+        svg_str = svg_wrap(body, None)
         svg_path.write_text(svg_str, encoding="utf-8")
         render(svg_str, OUT_DIR / filename)
     verify_pair(

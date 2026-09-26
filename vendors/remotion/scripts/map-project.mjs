@@ -76,9 +76,9 @@ for (const section of Object.keys(settings)) {
 // ---- characters -> config/characters.yaml ----
 const engineCharacters = {};
 for (const [id, c] of Object.entries(chars)) {
-  if (!c.voice || c.voice.engine !== "voicevox") {
-    die(`character '${id}': remotion vendor supports voice engine 'voicevox' only`);
-  }
+  // Voice engine validation is the platform's job (tools/ce.py via the
+  // provider registry). The vendor consumes project voices regardless of
+  // which engine produced them.
   engineCharacters[id] = {
     name: c.name,
     speakerId: c.voice.speaker_id ?? null,

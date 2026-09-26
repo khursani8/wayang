@@ -1,84 +1,80 @@
 # =============================================================
-# dialog template - two-host Q&A banter video
+# dialog template - two-host banter (Momo the tapir + Kiki the hornbill)
 # This file IS a working sample: init copies it as project.yaml
 # and it renders as-is. Edit characters, script, settings.
+# TTS: Revolab voices (set REVOLAB_API_KEY); without a key the render
+# falls back to estimated timing and silent audio, labeled in the log.
 # =============================================================
 meta:
-  title: "光合成のひみつ"
+  title: "Kenalan dengan Momo & Kiki"
   template: dialog
   vendor: remotion
-  language: ja
-  description: "2キャラ解説レッスンのサンプル"
+  language: ms
+  description: "dua hos banter: tapir + enggang"
 
 characters:
-  zundamon:
-    name: ずんだもん
-    color: "#228B22"
+  momo:
+    name: Momo
+    color: "#37474F"
     position: right
     voice:
-      engine: voicevox
-      speaker_id: 3
-    # OpenAI TTS example (needs OPENAI_API_KEY):
-    # voice:
-    #   engine: openai
-    #   voice: alloy
-    #   model: gpt-4o-mini-tts
-    #   speed: 1.0
-  metan:
-    name: 四国めたん
-    color: "#FF1493"
+      engine: revolab
+      voice_id: paan-f695215e
+  kiki:
+    name: Kiki
+    color: "#F9A825"
     position: left
     voice:
-      engine: voicevox
-      speaker_id: 2
+      engine: revolab
+      voice_id: nur-b184422b
 
 script:
   - id: 1
-    character: zundamon
-    text: "光合成って何なのだ？"
+    character: momo
+    text: "Hai semua! Saya Momo, tapir paling ceria!"
     scene: 1
-    pause_after: 0.5
+    pause_after: 0.4
     visual:
       type: text
-      text: "光合成のひみつ"
+      text: "Momo & Kiki"
       font_size: 96
       color: "#ffffff"
       animation: zoomIn
   - id: 2
-    character: metan
-    text: "植物が太陽の光を使って養分を作るしくみのことだよ。"
+    character: kiki
+    text: "Dan saya Kiki, burung enggang yang tak pernah senyap!"
     scene: 1
-    pause_after: 0.5
+    pause_after: 0.4
   - id: 3
-    character: zundamon
-    text: "空気中の二酸化炭素と水から、でん粉を作るのだ！"
+    character: momo
+    text: "Kami nak bercerita pasal rakan baharu kita hari ini!"
     scene: 2
-    pause_after: 0.5
+    pause_after: 0.4
     visual:
       type: text
-      text: "CO2 + H2O → でん粉"
-      font_size: 72
-      color: "#ffffff"
-      animation: zoomIn
-  - id: 4
-    character: metan
-    text: "植物はみんな光合成の名人なんだ。"
-    scene: 2
-    pause_after: 0.5
-  - id: 5
-    character: zundamon
-    text: "だから森林は地球の肺って呼ばれるのだ！"
-    scene: 3
-    pause_after: 0.5
-    visual:
-      type: text
-      text: "森林 = 地球の肺"
+      text: "Rakan Baharu!"
       font_size: 84
       color: "#ffffff"
-      animation: zoomIn
+      animation: slideLeft
+  - id: 4
+    character: kiki
+    text: "Jom kita kenali mereka sama-sama."
+    scene: 2
+    pause_after: 0.4
+  - id: 5
+    character: momo
+    text: "Jangan lupa follow untuk lebih banyak video!"
+    scene: 3
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Follow Kami!"
+      font_size: 88
+      color: "#ffffff"
+      animation: bounce
   - id: 6
-    character: metan
-    text: "次の授業も楽しみにしてるね。"
+    character: kiki
+    text: "Jumpa lagi di episod akan datang!"
     scene: 3
     pause_after: 1.0
 
@@ -99,7 +95,7 @@ settings:
     outline_width: 14
   character:
     height: 275
-    use_images: false
+    use_images: true
 
 vendor:
   remotion:

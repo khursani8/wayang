@@ -1,81 +1,82 @@
 # =============================================================
 # storytelling template - two-host narrative skit with emotions
-# Works as-is after init. Emotions show once you add character art.
+# Emotions show once character art exists (shipped in assets/images).
+# TTS: Revolab (set REVOLAB_API_KEY); without a key: estimate fallback.
 # =============================================================
 meta:
-  title: "ちいさな宝物"
+  title: "Harta Karun Kecil"
   template: storytelling
   vendor: remotion
-  language: ja
-  description: "narrative skit, emotions sprinkled, mood cards"
+  language: ms
+  description: "lakonan naratif dengan emosi"
 
 characters:
-  zundamon:
-    name: ずんだもん
-    color: "#228B22"
+  momo:
+    name: Momo
+    color: "#37474F"
     position: right
     voice:
-      engine: voicevox
-      speaker_id: 3
-  metan:
-    name: 四国めたん
-    color: "#FF1493"
+      engine: revolab
+      voice_id: paan-f695215e
+  kiki:
+    name: Kiki
+    color: "#F9A825"
     position: left
     voice:
-      engine: voicevox
-      speaker_id: 2
+      engine: revolab
+      voice_id: nur-b184422b
 
 script:
   - id: 1
-    character: zundamon
-    text: "きょう、川辺で光る石を見つけたのだ！"
+    character: momo
+    text: "Wah! Saya jumpa sesuatu yang berkilat di tepi sungai!"
     scene: 1
     pause_after: 0.4
     emotion: surprised
     visual:
       type: text
-      text: "光る石"
+      text: "Kilauan"
       font_size: 90
       color: "#ffffff"
       animation: zoomIn
   - id: 2
-    character: metan
-    text: "光る石？ただのガラスじゃないの？"
+    character: kiki
+    text: "Berkilat? Awak pasti ia bukan botol biasa?"
     scene: 1
     pause_after: 0.4
     emotion: thinking
   - id: 3
-    character: zundamon
-    text: "わふ！あったかい光が出てきたのだ！"
+    character: momo
+    text: "Tengok! Ia mengeluarkan cahaya yang hangat!"
     scene: 2
     pause_after: 0.6
     emotion: happy
     visual:
       type: text
-      text: "まばゆい光"
+      text: "Cahaya Hangat"
       font_size: 84
       color: "#ffffff"
       animation: bounce
   - id: 4
-    character: metan
-    text: "それは……ほんものの宝物かも。"
+    character: kiki
+    text: "Itu... mungkin harta karun yang sebenar."
     scene: 2
     pause_after: 0.6
     emotion: surprised
   - id: 5
-    character: zundamon
-    text: "きょうは一緒に探検してくれてありがとうなのだ。"
+    character: momo
+    text: "Terima kasih sebab sudi mencari bersama saya."
     scene: 3
     pause_after: 0.4
     visual:
       type: text
-      text: "ちいさな宝物"
+      text: "Harta Karun Kecil"
       font_size: 88
       color: "#ffffff"
       animation: zoomIn
   - id: 6
-    character: metan
-    text: "こちらこそ、また行こうね。"
+    character: kiki
+    text: "Sama-sama. Jom cari lagi lain kali!"
     scene: 3
     pause_after: 1.0
     emotion: happy
@@ -97,7 +98,7 @@ settings:
     outline_width: 14
   character:
     height: 275
-    use_images: false
+    use_images: true
 
 vendor:
   remotion:

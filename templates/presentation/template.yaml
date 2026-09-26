@@ -1,76 +1,77 @@
 # =============================================================
 # presentation template - one presenter + big content cards
 # Works as-is after init. Scenes act as slide sections.
+# TTS: Revolab (set REVOLAB_API_KEY); without a key: estimate fallback.
 # =============================================================
 meta:
-  title: "朝の習慣プレゼン"
+  title: "Tabiat Pagi"
   template: presentation
   vendor: remotion
-  language: ja
-  description: "1 presenter, card-driven slides, longer pauses"
+  language: ms
+  description: "satu peneraju, kad kandungan besar"
 
 characters:
-  zundamon:
-    name: ずんだもん
-    color: "#228B22"
+  momo:
+    name: Momo
+    color: "#37474F"
     position: right
     voice:
-      engine: voicevox
-      speaker_id: 3
+      engine: revolab
+      voice_id: paan-f695215e
 
 script:
   - id: 1
-    character: zundamon
-    text: "おはようございます。今日は朝の習慣について話します。"
+    character: momo
+    text: "Selamat pagi semua! Hari ini saya nak kongsi tiga tabiat pagi."
     scene: 1
     pause_after: 1.2
     visual:
       type: text
-      text: "朝の習慣"
+      text: "Tabiat Pagi"
       font_size: 96
       color: "#ffffff"
       animation: zoomIn
   - id: 2
-    character: zundamon
-    text: "まず、起きたら水を一杯飲むのです。"
+    character: momo
+    text: "Satu, minum segelas air selepas bangun tidur."
     scene: 1
     pause_after: 1.2
     visual:
       type: text
-      text: "1. 水を一杯飲む"
-      font_size: 80
+      text: "1. Air"
+      font_size: 84
       color: "#ffffff"
       animation: slideLeft
   - id: 3
-    character: zundamon
-    text: "次に、太陽の光を浴びるのです。体が目覚めます。"
+    character: momo
+    text: "Dua, bentang tilam terus. Mudah tapi jarang dibuat."
     scene: 2
     pause_after: 1.2
     visual:
       type: text
-      text: "2. 太陽の光を浴びる"
-      font_size: 80
+      text: "2. Bentang tilam"
+      font_size: 84
       color: "#ffffff"
       animation: slideUp
   - id: 4
-    character: zundamon
-    text: "ポイントは毎日続けることなのです。"
+    character: momo
+    text: "Tiga, keluar ambil cahaya matahari selama lima minit."
     scene: 2
     pause_after: 1.2
   - id: 5
-    character: zundamon
-    text: "まとめです。水と光、そして継続。それだけなのです。"
+    character: momo
+    text: "Kesimpulannya, mula dengan langkah kecil setiap hari."
     scene: 3
     pause_after: 1.5
     visual:
       type: text
-      text: "まとめ"
+      text: "Mula Kecil"
       font_size: 88
       color: "#ffffff"
       animation: zoomIn
   - id: 6
-    character: zundamon
-    text: "ご清聴ありがとうございました。"
+    character: momo
+    text: "Terima kasih sebab mendengar!"
     scene: 3
     pause_after: 1.0
 
@@ -91,7 +92,7 @@ settings:
     outline_width: 14
   character:
     height: 275
-    use_images: false
+    use_images: true
 
 vendor:
   remotion:

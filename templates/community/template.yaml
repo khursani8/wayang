@@ -1,83 +1,84 @@
 # =============================================================
-# community template - casual 2-character community announcement
-# Works as-is after init. Edit characters, script, settings.
+# community template - casual announcement (Momo + Kiki)
+# Works as-is after init.
+# TTS: Revolab (set REVOLAB_API_KEY); without a key: estimate fallback.
 # =============================================================
 meta:
-  title: "コミュニティ交流会のご案内"
+  title: "Meetup Komuniti"
   template: community
   vendor: remotion
-  language: ja
-  description: "カジュアルな告知動画のサンプル"
+  language: ms
+  description: "pengumuman komuniti yang santai"
 
 characters:
-  usagi:
-    name: うさぎ
-    color: "#FF7043"
-    position: left
-    voice:
-      engine: voicevox
-      speaker_id: 2
-  kappa:
-    name: かっぱ
-    color: "#29B6F6"
+  momo:
+    name: Momo
+    color: "#37474F"
     position: right
     voice:
-      engine: voicevox
-      speaker_id: 3
+      engine: revolab
+      voice_id: paan-f695215e
+  kiki:
+    name: Kiki
+    color: "#F9A825"
+    position: left
+    voice:
+      engine: revolab
+      voice_id: nur-b184422b
 
 script:
   - id: 1
-    character: usagi
-    text: "きいてきいて、交流会やることになったよ！"
+    character: momo
+    text: "Jom! Komuniti kita ada meetup pada hujung bulan ini!"
     scene: 1
     pause_after: 0.4
     visual:
       type: text
-      text: "コミュニティ交流会"
+      text: "Meetup Komuniti"
       font_size: 96
       color: "#ffffff"
       animation: bounce
   - id: 2
-    character: kappa
-    text: "日時は九月三十日、夜七時からのだ。"
+    character: kiki
+    text: "Sabtu, pukul 8 malam, di talian sepenuhnya."
     scene: 1
     pause_after: 0.4
     visual:
       type: text
-      text: "9/30 19:00 JST"
+      text: "Sabtu 8 Malam"
       font_size: 84
       color: "#ffffff"
       animation: zoomIn
   - id: 3
-    character: usagi
-    text: "場所はオンライン、参加費は無料だよ。"
+    character: momo
+    text: "Percuma untuk semua, tak perlu daftar."
     scene: 2
     pause_after: 0.4
   - id: 4
-    character: kappa
-    text: "持ち寄りトークも歓迎なのだ！"
+    character: kiki
+    text: "Bawa soalan anda, kami bawa jawapannya!"
     scene: 2
     pause_after: 0.4
     visual:
       type: text
-      text: "LT 大歓迎"
+      text: "Bawa Soalan"
       font_size: 88
       color: "#ffffff"
       animation: slideLeft
   - id: 5
-    character: usagi
-    text: "参加したい人はコメントしてね！"
+    character: momo
+    text: "Jumpa anda di sana!"
     scene: 3
     pause_after: 0.4
     visual:
       type: text
-      text: "参加はコメントで！"
+      text: "Jumpa Di Sana!"
       font_size: 88
       color: "#ffffff"
       animation: zoomIn
   - id: 6
-    character: kappa
-    text: "それでは当日会えるのを楽しみにしているのだ。"
+    character: kiki
+    text: "Selamat mencuba dan selamat berkongsi!"
     scene: 3
     pause_after: 1.0
 
@@ -98,7 +99,7 @@ settings:
     outline_width: 14
   character:
     height: 275
-    use_images: false
+    use_images: true
 
 vendor:
   remotion:

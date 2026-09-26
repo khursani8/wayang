@@ -74,6 +74,8 @@ def cmd_templates(args):
 
 
 def cmd_init(args):
+    name = args.name
+    name = name.removeprefix("projects/")
     src = ROOT / "templates" / args.template
     if not (src / "template.yaml").is_file():
         fail(f"unknown template: {args.template}")

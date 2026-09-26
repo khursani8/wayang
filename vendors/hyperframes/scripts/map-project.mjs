@@ -289,5 +289,9 @@ fs.writeFileSync(path.join(workDir, "package.json"), JSON.stringify({
 }, null, 2) + "\n");
 
 fs.writeFileSync(path.join(workDir, "expected-seconds.txt"), String(total));
+fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({
+  lines: timeline.map((s) => ({ id: s.line.id, start: +s.start.toFixed(3), end: +s.end.toFixed(3) })),
+  total,
+}));
 console.log(`[map-project] characters: ${Object.keys(chars).join(", ")}`);
 console.log(`[map-project] lines: ${script.length}, total: ${total}s`);

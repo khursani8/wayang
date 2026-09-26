@@ -50,5 +50,6 @@ if [ -n "$EXPECTED" ]; then
   fi
 fi
 
+cp "$WORK/timeline.json" "$OUT_DIR/timeline.json"
 cp "$WORK/out.mp4" "$OUT_DIR/video.mp4"
 echo "[hyperframes-vendor] wrote $OUT_DIR/video.mp4"

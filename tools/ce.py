@@ -281,12 +281,14 @@ def _ffprobe_json(mp4: Path) -> dict:
     return json.loads(out.stdout)
 
 
-def _ffmpeg_frame(mp4: Path, t: float, out: Path) -> None:
-    subprocess.run(
+def _ffmpeg_frame(mp4: Path, t: float, total: float, out: Path) -> bool:
+    t = max(0.0, min(t, total - 0.2))
+    proc = subprocess.run(
         ["ffmpeg", "-y", "-v", "error", "-ss", f"{t:.3f}", "-i", str(mp4),
          "-frames:v", "1", str(out)],
-        check=True,
+        check=False,
     )
+    return proc.returncode == 0 and out.is_file()
 
 
 def _ffmpeg_volume(mp4: Path, start: float, dur: float) -> float:
@@ -359,27 +361,44 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
     real_voices = bool(manifest and manifest.get("engines"))
 
     windows = []
-    t = 0.0
-    for line in data["script"]:
-        fname = f"{line['id']:02d}_{line['character']}.wav"
-        if manifest and fname in (manifest.get("lines") or {}):
-            dur = float(manifest["lines"][fname]["seconds"])
-        else:
-            dur = max(0.8, len(str(line["text"]).replace(" ", "")) / (cps * rate))
-        windows.append((line, t, dur))
-        t += dur + (line.get("pause_after", 0.5))
+    tl_path = mp4.parent / "timeline.json"
+    if tl_path.is_file():
+        tl = json.loads(tl_path.read_text(encoding="utf-8"))
+        by_id = {int(entry["id"]): entry for entry in tl.get("lines", [])}
+        for line in data["script"]:
+            entry = by_id.get(int(line["id"]))
+            if entry:
+                dur = float(entry["end"]) - float(entry["start"])
+                windows.append((line, float(entry["start"]), dur))
+        if windows:
+            log.info("lint: using vendor timeline.json (%d lines)", len(windows))
+    if not windows:
+        t = 0.0
+        for line in data["script"]:
+            fname = f"{line['id']:02d}_{line['character']}.wav"
+            if manifest and fname in (manifest.get("lines") or {}):
+                dur = float(manifest["lines"][fname]["seconds"])
+            else:
+                dur = max(0.8, len(str(line["text"]).replace(" ", "")) / (cps * rate))
+            windows.append((line, t, dur))
+            t += dur + (line.get("pause_after", 0.5))
 
     tmp = pdir / "out" / ".lint"
     tmp.mkdir(parents=True, exist_ok=True)
     tail_png = tmp / "tail.png"
-    _ffmpeg_frame(mp4, max(0.0, duration - 0.4), tail_png)
+    if not _ffmpeg_frame(mp4, duration - 0.4, duration, tail_png):
+        log.error("visibility lint: could not extract the reference frame")
+        raise SystemExit(1)
     tail = Image.open(tail_png).convert("RGB")
 
     failures = 0
     for line, start, dur in windows:
         mid = start + dur * 0.6
         f_png = tmp / f"f{line['id']}.png"
-        _ffmpeg_frame(mp4, mid, f_png)
+        if not _ffmpeg_frame(mp4, mid, duration, f_png):
+            log.error("visibility: line %s frame missing - render is shorter than the computed timeline", line["id"])
+            failures += 1
+            continue
         img = Image.open(f_png).convert("RGB")
 
         sub_ink = _band_diff_count(img, tail, (subX0, max(0, subY0), subX1, subY1))

@@ -240,6 +240,20 @@ if (platformEngines === null) {
 fs.writeFileSync(path.join(workVoices, "durations.json"), JSON.stringify(durations, null, 2));
 fs.writeFileSync(path.join(workVoices, ".source"), platformEngines ? "platform" : "estimate");
 
+// Emit the exact timeline the renderer will play (per-line adjusted frames,
+// Root.tsx contract) so the platform linter probes the true windows.
+const adjusted = (frames) => Math.ceil(frames / playbackRate);
+let frameCursor = 0;
+const timelineLines = engineScript.map((line) => {
+  const f = `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
+  const ad = adjusted(durations[f]);
+  const ap = adjusted(line.pauseAfter ?? 15);
+  const entry = { id: line.id, start: +(frameCursor / fps).toFixed(3), end: +((frameCursor + ad) / fps).toFixed(3) };
+  frameCursor += ad + ap;
+  return entry;
+});
+fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({ lines: timelineLines, total: +((frameCursor + 60) / fps).toFixed(3) }));
+
 // Expected composition length (Root.tsx contract): sum of per-line
 // playback-rate-adjusted frames plus the 60-frame closing buffer.
 // build.sh compares this against the rendered file as a regression guard

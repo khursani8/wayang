@@ -58,5 +58,6 @@ if [ -n "$EXPECTED" ]; then
   fi
 fi
 
+cp "$WORK/timeline.json" "$OUT_DIR/timeline.json"
 cp "$WORK/out/video.mp4" "$OUT_DIR/video.mp4"
 echo "[remotion-vendor] wrote $OUT_DIR/video.mp4"

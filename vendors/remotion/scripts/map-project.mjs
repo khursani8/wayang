@@ -268,7 +268,8 @@ fs.writeFileSync(path.join(workDir, "expected-seconds.txt"), (expectedFrames / f
 
 // ---- background theme: project custom file > named theme > engine default ----
 const vendorDir = path.resolve(workDir, "..", "..");
-const catalogDir = path.join(vendorDir, "assets", "backgrounds");
+const repoRoot = path.resolve(workDir, "..", "..", "..", "..");
+const catalogDir = path.join(repoRoot, "assets", "backgrounds");
 const catalog = fs.existsSync(catalogDir)
   ? fs.readdirSync(catalogDir).filter((f) => f.endsWith(".png")).map((f) => f.replace(".png", ""))
   : [];

@@ -1,119 +1,49 @@
 # content_engine — agent manual
 
-Platform for template-driven video generation. A user picks a template, fills
-one canonical YAML file, and a video engine renders it. The platform owns
-structure and contracts only. It contains no engine code.
+Framework-agnostic video generation. Templates named by format
+(dialog, presentation, storytelling, community). Agents drive `tools/ce.py`;
+humans fill one YAML per video. Malaysian identity: Momo and Kiki mascots,
+Bahasa Malaysia content.
 
 ## Layout
 
-    AGENTS.md                    this manual
-    schema/project.schema.json   canonical project YAML schema
-    templates/<name>/            template.yaml skeleton + assets/ + README.md
-    vendors/<engine>/            AGENTS.md (engine contract) + build.sh + engine/
-    tools/ce.py                  CLI: templates | init | validate | render
-    projects/<name>/             filled copies of templates (gitignored)
-    .rumpun/                     campaign management (rumpun CLI, season s1)
+    AGENTS.md                    this router (deep rules live in docs/)
+    docs/vendor-contract.md      what every engine must provide
+    docs/project-yaml.md         canonical YAML reference
+    schema/project.schema.json   strict gate for project.yaml
+    templates/<format>/          working skeletons: template.yaml + art
+    vendors/<engine>/            AGENTS.md (deltas) + build.sh + mapper
+    tools/ce.py                  templates|init|init-series|check|validate|
+                                 tts|render|lint
+    projects/<name>/             your filled YAML + assets (gitignored)
+    assets/                      art generator sources (mascots, backgrounds)
 
-## Canonical project.yaml
+## Workflow
 
-One file per project. Sections: meta, characters, script, settings, vendor.
-Full rules: `schema/project.schema.json` and `templates/<name>/template.yaml`
-comments. Core rules:
+1. `uv run tools/ce.py templates`
+2. `uv run tools/ce.py init <format> <name>`
+3. `uv run tools/ce.py check projects/<name>` — plain-words preflight; relay
+   FILL items to the user before writing more YAML
+4. edit `projects/<name>/project.yaml`
+5. `uv run tools/ce.py validate projects/<name>` — strict gate
+6. `uv run tools/ce.py render projects/<name>` — TTS + vendor build +
+   visibility lint in one command (`--skip-lint` escapes)
 
-- `meta.vendor` names the engine that renders this project. `meta.template`
-  names the template it came from.
-- Characters, script order, and timing semantics are canonical. Changing
-  vendor must not require rewriting the YAML.
-- Timing units: seconds everywhere in canonical YAML. The vendor converts to
-  engine units.
-- `settings.background` names a background theme; the catalog is
-  vendor-defined (see the vendor AGENTS.md). Unknown themes error.
-- `vendor:` holds engine-specific keys. Each vendor documents its keys in its
-  AGENTS.md. Unknown or unsupported keys must error, never be dropped.
+## Invariants
 
-## Vendor contract
+- Canonical YAML is the stable contract across engines. Timing in seconds.
+  Unknown keys error; nothing is dropped silently.
+- Vendors ship build.sh PROJECT_DIR OUT_DIR and emit video.mp4 +
+  timeline.json + expected-seconds.txt. Guards: duration (0.5s tolerance)
+  and visibility (frames probed per line). Audio source named in every log.
+- Series: series.yaml is a sparse base; episodes deep-merge it (episode
+  wins per key). Vendors never see series - the platform hands them a
+  merged project.
+- Check before render. Relay FILL items to the user in plain words.
 
-Every vendor ships:
+## Pointers
 
-1. `vendors/<engine>/AGENTS.md` — the engine manual for agents: how the engine
-   works, where materials go, how rendering runs, what the mapping from
-   canonical YAML is, capability limits.
-2. `vendors/<engine>/build.sh PROJECT_DIR OUT_DIR` — deterministic entry:
-   reads `PROJECT_DIR/project.yaml`, produces `OUT_DIR/video.mp4`, exit 0 on
-   success. Idempotent: safe to re-run. The build log must state the audio
-   source used, or `estimate` when no voices were generated.
-3. Unknown canonical keys that the engine cannot honor must error. A vendor
-   may warn+skip styling it supports no equivalent for, only if its AGENTS.md
-   says so.
-
-## TTS providers (platform)
-
-The repo owns no services. TTS engines are API clients the user configures:
-
-- `openai`: OpenAI text-to-speech API, needs OPENAI_API_KEY.
-- `revolab`: api.revolab.ai text-to-speech, needs REVOLAB_API_KEY.
-  Model default nada-1.0-pro; voice ids from GET /v1/voices.
-
-`ce.py tts <project>` (also run by `ce.py render`) writes one wav per script
-line into `projects/<name>/voices/` plus `manifest.json` (hash, seconds,
-engine). Re-runs skip unchanged lines. Availability gate is all-or-nothing per
-project: if a configured engine has no key or is unreachable, the step warns
-and skips, and the vendor renders with estimated timing. An API error while
-credentials are present fails the run. Real TTS and silent estimates are
-never mixed in one timeline.
-
-Add a provider: implement it in `tools/tts_providers.py`, add the engine to
-the `voice.engine` enum in `schema/project.schema.json`, and cover its keys
-in a schema `if/then` branch.
-
-## Agent workflow
-
-1. `uv run tools/ce.py templates` — list templates.
-2. `uv run tools/ce.py init <template> <project-name>` — scaffold
-   `projects/<name>/project.yaml` plus assets.
-3. User or agent edits project.yaml (characters, script, visuals).
-4. `uv run tools/ce.py validate projects/<name>` — schema + semantic checks.
-5. `uv run tools/ce.py render projects/<name>` — dispatches to
-   `vendors/<vendor>/build.sh`, streams build output.
-
-## Series
-
-A series is a folder convention over projects:
-
-    projects/<series>/
-      series.yaml              optional shared base: meta, characters, settings
-      episodes/<ep>/project.yaml
-
-Rules:
-
-- An episode deep-merges series.yaml under its own project.yaml: the episode
-  wins per key, dicts merge, lists replace. `script` is always episode-only.
-- series.yaml is a fragment. It is never validated on its own; validation
-  runs on the merged result.
-- `ce.py init-series <name> --template <t>` scaffolds series.yaml plus the
-  first episode. `ce.py init <t> <series>/episodes/<ep>` adds another.
-- `ce.py validate|tts|render projects/<series>` runs every episode in name
-  order and stops at the first failure.
-- Shared art: place images in each episode's assets/. There is no cross-dir
-  asset resolution.
-- Vendors never learn about series. When inheritance applied, ce.py writes
-  the merged document to `.merged.yaml` beside project.yaml and the vendor
-  reads that. Stale sidecars are removed before each render.
-
-## Visibility lint
-
-After every render, ce.py lints the rendered file itself: frames extracted
-at each line's midpoint must show subtitle ink in the subtitle band, the
-text card in the card region, character animation in its corner box, and
-real-voice lines must measure louder than -55 dB. An invisible or silent
-object fails the build. The layout contract it enforces: characters in the
-bottom corners (charH box, 40px inset), subtitle bottom-center within
-max_width_percent and at most 2 lines, text cards in the upper-center
-region. `ce.py lint <project>` re-runs it standalone; `render
---skip-lint` escapes.
-
-## Honesty rules
-
-- The build log always names the audio engines used, or `estimate`
-  (estimated timing, silent placeholder audio). Never present an estimate
-  render as TTS-timed.
+- Per-engine quirks: `vendors/<engine>/AGENTS.md`
+- YAML reference: `docs/project-yaml.md`
+- Join as a vendor: `docs/vendor-contract.md`
+- Art generators: `assets/` (mascots, background themes)

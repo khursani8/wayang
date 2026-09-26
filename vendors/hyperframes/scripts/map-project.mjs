@@ -100,7 +100,8 @@ for (const line of script) {
 const total = +(t + 2).toFixed(3);
 
 // ---- background: project custom > named theme > engine default (riverbank) ----
-const catalogDir = path.join(vendorDir, "assets", "backgrounds");
+const repoRoot = path.resolve(workDir, "..", "..", "..", "..");
+const catalogDir = path.join(repoRoot, "assets", "backgrounds");
 const catalog = fs.existsSync(catalogDir)
   ? fs.readdirSync(catalogDir).filter((f) => f.endsWith(".png")).map((f) => f.replace(".png", ""))
   : [];

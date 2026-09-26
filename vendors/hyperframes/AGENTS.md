@@ -1,8 +1,8 @@
 # vendors/hyperframes — engine manual (AGENTS.md)
 
-HyperFrames vendor for content_engine (HTML/CSS compositions rendered
-deterministically to MP4 by the HyperFrames CLI). Read this before touching
-the vendor. The platform contract is in the root `AGENTS.md`.
+HyperFrames vendor for content_engine: HTML/CSS compositions rendered
+deterministically by the HyperFrames CLI. The shared interface is
+docs/vendor-contract.md; this file holds hyperframes-specific deltas only.
 
 ## How the engine works
 
@@ -21,12 +21,9 @@ the vendor. The platform contract is in the root `AGENTS.md`.
 
     vendors/hyperframes/build.sh PROJECT_DIR OUT_DIR
 
-Input: `.merged.yaml` when present (platform-materialized series
-inheritance), else `project.yaml`. Steps: fresh workdir at
-`vendors/hyperframes/.work/<project>/`, project `voices/` and `assets/`
-copied in, `scripts/map-project.mjs` writes `index.html` +
-`package.json` + `expected-seconds.txt`, `npx hyperframes render`,
-duration guard, result copied to `OUT_DIR/video.mp4`. Idempotent.
+Workdir: `vendors/hyperframes/.work/<project>/` (fresh each run).
+Input: `.merged.yaml` when the platform materialized series inheritance,
+else `project.yaml`.
 
 ## Canonical -> engine mapping
 

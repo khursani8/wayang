@@ -29,6 +29,7 @@ Framework-agnostic video template platform: fill one YAML, get a video.
     uv run tools/ce.py templates
     uv run tools/ce.py init dialog my-video
     # edit projects/my-video/project.yaml (characters, script, settings)
+    uv run tools/ce.py check projects/my-video      # what to fill, in plain words
     uv run tools/ce.py validate projects/my-video
     REVOLAB_API_KEY=... uv run tools/ce.py render projects/my-video
 

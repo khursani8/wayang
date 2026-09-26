@@ -1,7 +1,8 @@
 # vendors/remotion — engine manual (AGENTS.md)
 
-Remotion vendor for content_engine. Read this before touching the
-engine. The platform contract is in the root `AGENTS.md`.
+Remotion vendor for content_engine. Read this before touching the engine.
+The shared interface (build.sh signature, outputs, guards) is
+docs/vendor-contract.md; this file holds remotion-specific deltas only.
 
 ## How the engine works
 
@@ -30,15 +31,9 @@ engine. The platform contract is in the root `AGENTS.md`.
 
     vendors/remotion/build.sh PROJECT_DIR OUT_DIR
 
-Input file: `.merged.yaml` when present (platform-materialized series
-inheritance), else `project.yaml`.
-
-Steps: fresh workdir at `vendors/remotion/.work/<project>/` (engine source
-copied, node_modules symlinked from `engine/`), project `assets/` copied into
-`public/`, `scripts/map-project.mjs` converts canonical project.yaml into the
-engine configs plus estimated timings, `npm run sync`, `remotion render`,
-result copied to `OUT_DIR/video.mp4`. Idempotent:
-the workdir is rebuilt from scratch every run.
+Workdir: `vendors/remotion/.work/<project>/` (fresh each run; node_modules
+symlinked from `engine/`). Input: `.merged.yaml` when the platform
+materialized series inheritance, else `project.yaml`.
 
 ## Canonical -> engine mapping
 

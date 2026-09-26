@@ -351,9 +351,6 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
             log.error("layout: subtitle band overlaps character '%s' box", cid)
             return False
 
-    vendor = data["meta"]["vendor"]
-    rate = s.get("video", {}).get("playback_rate", 1.0) if vendor == "remotion" else 1.0
-    cps = ((data.get("vendor") or {}).get(vendor) or {}).get("estimate_cps", 7.5)
     manifest_path = pdir / "voices" / "manifest.json"
     manifest = None
     if manifest_path.is_file():
@@ -373,15 +370,8 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
         if windows:
             log.info("lint: using vendor timeline.json (%d lines)", len(windows))
     if not windows:
-        t = 0.0
-        for line in data["script"]:
-            fname = f"{line['id']:02d}_{line['character']}.wav"
-            if manifest and fname in (manifest.get("lines") or {}):
-                dur = float(manifest["lines"][fname]["seconds"])
-            else:
-                dur = max(0.8, len(str(line["text"]).replace(" ", "")) / (cps * rate))
-            windows.append((line, t, dur))
-            t += dur + (line.get("pause_after", 0.5))
+        log.error("visibility lint: %s missing - the vendor must emit the timeline it renders", tl_path)
+        raise SystemExit(1)
 
     tmp = pdir / "out" / ".lint"
     tmp.mkdir(parents=True, exist_ok=True)
@@ -433,6 +423,84 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
         raise SystemExit(1)
     log.info("visibility lint: all checks passed")
     return True
+
+
+def cmd_check(args):
+    """Preflight guidance: what to fill before rendering, in plain words.
+    Exit 0 ready, 1 blockers, 2 notes only."""
+    pdir = resolve_project(args.project)
+    pf = pdir / "project.yaml"
+    if not pf.is_file():
+        fail(f"{pf} missing")
+    try:
+        data = yaml.safe_load(pf.read_text(encoding="utf-8"))
+    except yaml.YAMLError as e:
+        fail(f"project.yaml parse error: {e}")
+    if not isinstance(data, dict):
+        fail("project.yaml must be a mapping")
+    issues, notes = [], []
+    for section in ("meta", "characters", "script", "settings"):
+        if section not in data:
+            issues.append(f"no [{section}] section - copy it from templates/<format>/template.yaml")
+    meta = data.get("meta") or {}
+    if not str(meta.get("title", "")).strip():
+        issues.append("meta.title is empty - name your video")
+    vendor = meta.get("vendor", "remotion")
+    build = ROOT / "vendors" / vendor / "build.sh"
+    if not build.is_file():
+        issues.append(f"vendor '{vendor}' does not exist (known: remotion, hyperframes)")
+    chars = data.get("characters") or {}
+    if not chars:
+        issues.append("no characters - every script line needs a speaker")
+    for cid, c in chars.items():
+        if not str(c.get("name", "")).strip():
+            issues.append(f"character '{cid}' has no name")
+        v = c.get("voice") or {}
+        engine = v.get("engine")
+        if not engine:
+            issues.append(f"character '{cid}' has no voice.engine - how should it sound?")
+        elif engine not in PROVIDERS:
+            issues.append(f"character '{cid}': voice engine '{engine}' is unknown (known: {', '.join(sorted(PROVIDERS))})")
+        else:
+            ok, why = PROVIDERS[engine].available()
+            if not ok:
+                notes.append(f"character '{cid}' speaks via {engine}: {why} - renders stay silent with estimated timing until you set the key")
+    lines = data.get("script") or []
+    if not lines:
+        issues.append("script is empty - write at least one line")
+    for line in lines:
+        if line.get("character") not in chars:
+            issues.append(f"script line {line.get('id')}: speaker '{line.get('character')}' is not defined in characters")
+        if not str(line.get("text", "")).strip():
+            issues.append(f"script line {line.get('id')}: text is empty")
+    settings = data.get("settings") or {}
+    if settings.get("background") is not None:
+        catalog_dir = ROOT / "vendors" / vendor / "assets" / "backgrounds"
+        if catalog_dir.is_dir():
+            catalog = sorted(p.stem for p in catalog_dir.glob("*.png"))
+            if settings["background"] not in catalog:
+                issues.append(f"settings.background '{settings['background']}' is not a theme here (available: {', '.join(catalog)})")
+    if settings.get("character", {}).get("use_images"):
+        for cid in chars:
+            if not (pdir / "assets" / "images" / cid / "mouth_close.png").is_file():
+                notes.append(f"character '{cid}' has use_images but no art at assets/images/{cid}/ - placeholder box will show")
+    manifest_file = pdir / "voices" / "manifest.json"
+    if manifest_file.is_file():
+        cached = len(json.loads(manifest_file.read_text(encoding="utf-8")).get("lines", {}))
+        notes.append(f"{cached} line voice(s) cached in voices/ - they are reused on render")
+    for msg in issues:
+        log.warning("FILL: %s", msg)
+    for msg in notes:
+        log.info("NOTE: %s", msg)
+    if args.json:
+        print(json.dumps({"ready": not issues, "issues": issues, "notes": notes}))
+    if issues:
+        log.warning("NOT READY: %d item(s) to fill above - then: ce.py validate && ce.py render", len(issues))
+        raise SystemExit(1)
+    if notes:
+        log.warning("READY with %d note(s) - see NOTE lines above", len(notes))
+        raise SystemExit(2)
+    log.info("READY")
 
 
 def cmd_lint(args):
@@ -495,6 +563,11 @@ def main():
     p = sub.add_parser("validate", help="validate a project")
     p.add_argument("project")
     p.set_defaults(func=cmd_validate)
+
+    p = sub.add_parser("check", help="preflight: what to fill before rendering")
+    p.add_argument("project")
+    p.add_argument("--json", action="store_true", help="machine-readable report")
+    p.set_defaults(func=cmd_check)
 
     p = sub.add_parser("lint", help="check a rendered video for invisible objects")
     p.add_argument("project")

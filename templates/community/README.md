@@ -4,8 +4,8 @@ cards, short lines. Same fill order as the dialog template.
 walk through a topic in 2-3 scenes with big text cards.
 
 Fill order:
-1. `characters`: rename ids, set `name`, `color`, `position`, and VOICEVOX
-   `speaker_id` per character.
+1. `characters`: rename ids, set `name`, `color`, `position`, and a
+   `voice` (for example `engine: revolab` plus a `voice_id`).
 2. `script`: one entry per spoken line. `text` is spoken, `display_text`
    overrides the subtitle text. `scene` groups lines, `visual` draws a big
    text card for that line.

@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import urllib.error
-import urllib.parse
 import urllib.request
 import wave
 
@@ -27,49 +26,6 @@ def wav_seconds(path) -> float:
 def line_hash(text: str, engine: str, params: dict) -> str:
     payload = json.dumps({"text": text, "engine": engine, "params": params}, sort_keys=True)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
-
-
-class VoicevoxProvider:
-    name = "voicevox"
-
-    def __init__(self):
-        self.host = os.environ.get("VOICEVOX_HOST", "http://localhost:50021")
-
-    def available(self):
-        try:
-            with urllib.request.urlopen(f"{self.host}/version", timeout=3):
-                return True, ""
-        except Exception as e:  # noqa: BLE001 - availability probe, any error means unavailable
-            return False, f"not reachable at {self.host}: {e}"
-
-    def config_hash(self, cfg: dict) -> dict:
-        return {"speaker_id": cfg.get("speaker_id")}
-
-    def synthesize(self, text: str, cfg: dict, out_path) -> None:
-        speaker = cfg.get("speaker_id")
-        if speaker is None:
-            raise ProviderError("voicevox needs characters.<id>.voice.speaker_id")
-        url = (
-            f"{self.host}/audio_query?speaker={speaker}"
-            f"&text={urllib.parse.quote(text)}"
-        )
-        try:
-            req = urllib.request.Request(url, data=b"", method="POST")
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                query = json.loads(resp.read().decode("utf-8"))
-            syn = urllib.request.Request(
-                f"{self.host}/synthesis?speaker={speaker}",
-                data=json.dumps(query).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(syn, timeout=120) as resp:
-                audio = resp.read()
-        except urllib.error.HTTPError as e:
-            raise ProviderError(f"voicevox http {e.code}: {e.read().decode(errors='replace')[:300]}") from e
-        except urllib.error.URLError as e:
-            raise ProviderError(f"voicevox connection error: {e.reason}") from e
-        out_path.write_bytes(audio)
 
 
 class OpenAIProvider:
@@ -101,7 +57,7 @@ class OpenAIProvider:
             headers={
                 "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
                 "Content-Type": "application/json",
-        },
+            },
             method="POST",
         )
         try:
@@ -153,4 +109,4 @@ class RevolabProvider:
         out_path.write_bytes(audio)
 
 
-PROVIDERS = {p.name: p for p in (VoicevoxProvider(), OpenAIProvider(), RevolabProvider())}
+PROVIDERS = {p.name: p for p in (OpenAIProvider(), RevolabProvider())}

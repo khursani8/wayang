@@ -2,14 +2,12 @@
 # content_engine projects define characters in their own project.yaml.
 momo:
   name: Momo
-  speakerId: null
   position: right
   color: "#37474F"
   flipX: false
   defaultPauseAfter: 15
 kiki:
   name: Kiki
-  speakerId: null
   position: left
   color: "#F9A825"
   flipX: false

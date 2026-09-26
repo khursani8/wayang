@@ -40,7 +40,6 @@ interface ScriptLine {
 
 interface CharacterConfig {
   name: string;
-  speakerId: number | null;
   position: string;
   color: string;
   flipX?: boolean;
@@ -87,11 +86,6 @@ function main() {
   // Generate CharacterId type
   const characterIds = Object.keys(characters);
   const characterIdType = characterIds.map(id => `"${id}"`).join(" | ");
-
-  // Generate characterSpeakerMap
-  const speakerMapEntries = characterIds
-    .filter(id => characters[id].speakerId !== null)
-    .map(id => `  ${id}: ${characters[id].speakerId},`);
 
   // content_engine: data-driven character export
   const charsData = characterIds.map((id) => ({
@@ -191,19 +185,6 @@ export const characterColors: Record<string, string> = ${JSON.stringify(
 
 export const scriptData: ScriptLine[] = ${JSON.stringify(processedLines, null, 2)};
 
-// VOICEVOX script generation helper
-export const generateVoicevoxScript = (
-  data: ScriptLine[],
-  characterSpeakerMap: Record<CharacterId, number>
-) => {
-  return data.map((line) => ({
-    id: line.id,
-    character: line.character,
-    speakerId: characterSpeakerMap[line.character],
-    text: line.text,
-    outputFile: line.voiceFile,
-  }));
-};
 `;
 
   fs.writeFileSync(OUTPUT_PATH, tsContent);

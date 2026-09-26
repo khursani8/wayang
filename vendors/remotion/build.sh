@@ -38,15 +38,6 @@ node "$VENDOR_DIR/scripts/map-project.mjs" "$PROJECT_DIR" "$WORK"
 # Generate engine sources from the mapped configs
 (cd "$WORK" && npm run sync)
 
-# TTS priority: platform voices (marked by map-project) > VOICEVOX > estimates.
-# map-project already logs the actual source; only log again when voicevox runs.
-SOURCE_FILE="$WORK/public/voices/.source"
-SOURCE="$(cat "$SOURCE_FILE" 2>/dev/null || echo unknown)"
-if [ "$SOURCE" != "platform" ] && curl -fsS --max-time 3 http://localhost:50021/version >/dev/null 2>&1; then
-  echo "[remotion-vendor] TTS source: voicevox"
-  (cd "$WORK" && npx ts-node scripts/generate-voices.ts && npm run sync-script)
-fi
-
 echo "[remotion-vendor] rendering..."
 (cd "$WORK" && npx remotion render src/index.ts Main out/video.mp4)
 

@@ -19,6 +19,4 @@ export const COLORS = {
 // Character ids are data-driven: any id from config/characters.yaml works.
 export type CharacterId = string;
 
-// VOICEVOX speaker ids live in config/characters.yaml (see map-project.mjs
-// and generate-voices.ts). Kept empty for the standalone sample.
 export const characterSpeakerMap: Record<CharacterId, number> = {};

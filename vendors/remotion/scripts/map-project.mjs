@@ -88,7 +88,6 @@ for (const [id, c] of Object.entries(chars)) {
   // which engine produced them.
   engineCharacters[id] = {
     name: c.name,
-    speakerId: c.voice.speaker_id ?? null,
     position: c.position ?? "right",
     color: c.color ?? "#4B5563",
     flipX: c.flip_x ?? false,

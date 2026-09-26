@@ -41,7 +41,7 @@ Every vendor ships:
 2. `vendors/<engine>/build.sh PROJECT_DIR OUT_DIR` — deterministic entry:
    reads `PROJECT_DIR/project.yaml`, produces `OUT_DIR/video.mp4`, exit 0 on
    success. Idempotent: safe to re-run. The build log must state the audio
-   source used: `voicevox` or `estimate`.
+   source used, or `estimate` when no voices were generated.
 3. Unknown canonical keys that the engine cannot honor must error. A vendor
    may warn+skip styling it supports no equivalent for, only if its AGENTS.md
    says so.
@@ -50,8 +50,6 @@ Every vendor ships:
 
 The repo owns no services. TTS engines are API clients the user configures:
 
-- `voicevox`: your own VOICEVOX endpoint (default http://localhost:50021,
-  override with VOICEVOX_HOST).
 - `openai`: OpenAI text-to-speech API, needs OPENAI_API_KEY.
 - `revolab`: api.revolab.ai text-to-speech, needs REVOLAB_API_KEY.
   Model default nada-1.0-pro; voice ids from GET /v1/voices.
@@ -104,6 +102,6 @@ Rules:
 
 ## Honesty rules
 
-- The build log always labels audio: `voicevox` (real TTS) or `estimate`
+- The build log always names the audio engines used, or `estimate`
   (estimated timing, silent placeholder audio). Never present an estimate
   render as TTS-timed.

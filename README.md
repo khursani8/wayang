@@ -36,12 +36,10 @@ Output: `projects/<name>/out/video.mp4`.
 ## TTS
 
 The repo owns no services. TTS engines are API clients you configure:
-`voicevox` (your own endpoint, default localhost:50021, override with
-VOICEVOX_HOST), `revolab` (needs REVOLAB_API_KEY; default model
-nada-1.0-pro, voice ids from GET /v1/voices) and `openai` (needs
-OPENAI_API_KEY). `ce.py tts` writes one wav per script line into
+`revolab` (needs REVOLAB_API_KEY; default model nada-1.0-pro, voice ids
+from GET /v1/voices) and `openai` (needs OPENAI_API_KEY). `ce.py tts` writes one wav per script line into
 `projects/<name>/voices/`; renders reuse cached lines, prefer those files,
-then VOICEVOX, then estimates. New engines: add a provider class in
+then estimates. New engines: add a provider class in
 `tools/tts_providers.py` plus the schema enum.
 
 ## Series

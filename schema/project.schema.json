@@ -211,43 +211,12 @@
             "engine": {
               "type": "string",
               "enum": [
-                "voicevox",
                 "openai",
                 "revolab"
               ]
             }
           },
           "allOf": [
-            {
-              "if": {
-                "properties": {
-                  "engine": {
-                    "const": "voicevox"
-                  }
-                },
-                "required": [
-                  "engine"
-                ]
-              },
-              "then": {
-                "properties": {
-                  "engine": {
-                    "type": "string",
-                    "enum": [
-                      "voicevox",
-                      "openai"
-                    ]
-                  },
-                  "speaker_id": {
-                    "type": [
-                      "integer",
-                      "null"
-                    ]
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
             {
               "if": {
                 "properties": {
@@ -264,8 +233,8 @@
                   "engine": {
                     "type": "string",
                     "enum": [
-                      "voicevox",
-                      "openai"
+                      "openai",
+                      "revolab"
                     ]
                   },
                   "voice": {
@@ -305,7 +274,6 @@
                   "engine": {
                     "type": "string",
                     "enum": [
-                      "voicevox",
                       "openai",
                       "revolab"
                     ]

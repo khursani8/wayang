@@ -158,16 +158,3 @@ export const scriptData: ScriptLine[] = [
   }
 ];
 
-// VOICEVOX script generation helper
-export const generateVoicevoxScript = (
-  data: ScriptLine[],
-  characterSpeakerMap: Record<CharacterId, number>
-) => {
-  return data.map((line) => ({
-    id: line.id,
-    character: line.character,
-    speakerId: characterSpeakerMap[line.character],
-    text: line.text,
-    outputFile: line.voiceFile,
-  }));
-};

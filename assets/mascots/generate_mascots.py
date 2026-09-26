@@ -1,4 +1,4 @@
-"""Generate mascot PNGs (Momo tapir, Kiki hornbill): base mouths + emotion variants.
+"""Generate mascot PNGs (Momo tapir, Kiki hornbill, Rimau tiger): base + emotions.
 
 The _open and _close variants of a character share one SVG template; only the
 mouth group string is swapped, so every other pixel is guaranteed identical.
@@ -8,6 +8,9 @@ Emotion variants (happy, surprised, thinking, sad) for both characters are
 rendered to /tmp/mascot-art/emotions/ the same way (identical body, swapped
 eye/brow + mouth groups), pair-verified against each other and against the
 base art, then deployed into the template and demo-project asset directories.
+
+Rimau (chibi Malayan tiger) renders base + emotion pairs to
+/tmp/mascot-art/rimau/ and deploys into the rimau-intro demo project.
 """
 
 import logging
@@ -20,17 +23,28 @@ import cairosvg
 
 OUT_DIR = Path("/tmp/mascot-art")
 EMO_DIR = Path("/tmp/mascot-art/emotions")
-ART_ROOT = Path("/mnt/data/work/content_engine")
+RIMAU_DIR = Path("/tmp/mascot-art/rimau")
+ART_ROOT = Path("/mnt/data/work/wayang")
+RIMAU_PROJECT_DIR = Path("/mnt/data/work/wayang/projects/rimau-intro/assets/images/rimau")
 TEMPLATE_NAMES = ("dialog", "presentation", "storytelling", "community")
 EMOTIONS = ("happy", "surprised", "thinking", "sad")
 SIZE = 1024
 OUTLINE = "#1C1C22"
 CREAM = "#F7F3E8"
+ORANGE = "#F57C00"
 
 # open/close diff must stay inside the mouth box; emotion-vs-base diff must
 # stay inside the whole face box (eyes, brows, mouth).
-EMO_DIFF_BOX = {"momo": (396, 484, 628, 636), "kiki": (404, 396, 620, 566)}
-FACE_BOX = {"momo": (336, 248, 688, 644), "kiki": (330, 184, 694, 564)}
+EMO_DIFF_BOX = {
+    "momo": (396, 484, 628, 636),
+    "kiki": (404, 396, 620, 566),
+    "rimau": (410, 460, 614, 610),
+}
+FACE_BOX = {
+    "momo": (336, 248, 688, 644),
+    "kiki": (330, 184, 694, 564),
+    "rimau": (330, 240, 694, 615),
+}
 
 logging.basicConfig(
     level=logging.INFO,
@@ -243,6 +257,104 @@ def kiki_body(mouth: str, eyes: str | None = None) -> str:
     return "".join(parts)
 
 
+# ------------------------------------------------------------------ Rimau (tiger)
+def rimau_mouth_open() -> str:
+    return (
+        '<clipPath id="rimau-mouth-clip">'
+        '<path d="M 452 506 Q 512 524 572 506 Q 580 556 512 574 Q 444 556 452 506 Z"/>'
+        "</clipPath>"
+        '<path d="M 452 506 Q 512 524 572 506 Q 580 556 512 574 Q 444 556 452 506 Z" '
+        f'fill="#7A3B44" stroke="{OUTLINE}" stroke-width="11"/>'
+        '<g clip-path="url(#rimau-mouth-clip)">'
+        '<ellipse cx="512" cy="578" rx="36" ry="20" fill="#E98A96"/>'
+        '<rect x="472" y="504" width="18" height="20" rx="5" fill="#FFFFFF"/>'
+        '<rect x="534" y="504" width="18" height="20" rx="5" fill="#FFFFFF"/>'
+        "</g>"
+    )
+
+
+def rimau_mouth_close() -> str:
+    return (
+        '<path d="M 452 506 Q 512 534 572 506" fill="none" '
+        f'stroke="{OUTLINE}" stroke-width="11"/>'
+    )
+
+
+def rimau_body(mouth: str, eyes: str | None = None) -> str:
+    if eyes is None:
+        # Rimau shares Momo's round chibi eye set (same face geometry).
+        eyes = momo_eyes_default()
+    parts = [
+        # striped tail (behind body)
+        f'<path d="M 676 800 Q 800 780 824 664" fill="none" stroke="{OUTLINE}" stroke-width="58"/>',
+        f'<path d="M 676 800 Q 800 780 824 664" fill="none" stroke="{ORANGE}" stroke-width="34"/>',
+        '<path d="M 757 751 L 778 774 M 792 708 L 820 723" '
+        'stroke="#262626" stroke-width="12" fill="none"/>',
+        # cream paws
+        f'<rect x="430" y="860" width="88" height="90" rx="42" fill="{CREAM}" stroke="{OUTLINE}" stroke-width="12"/>',
+        f'<rect x="506" y="860" width="88" height="90" rx="42" fill="{CREAM}" stroke="{OUTLINE}" stroke-width="12"/>',
+        '<path d="M 458 902 L 458 938 M 490 902 L 490 938 M 534 902 L 534 938 M 566 902 L 566 938" '
+        'stroke="#D8C9A6" stroke-width="6" fill="none"/>',
+        # body with cream belly + side stripes, clipped
+        f'<ellipse cx="512" cy="690" rx="195" ry="215" fill="{ORANGE}" stroke="{OUTLINE}" stroke-width="14"/>',
+        '<clipPath id="rimau-body-clip">'
+        '<ellipse cx="512" cy="690" rx="195" ry="215"/></clipPath>',
+        '<g clip-path="url(#rimau-body-clip)">'
+        f'<ellipse cx="512" cy="790" rx="112" ry="118" fill="{CREAM}"/>'
+        '<path d="M 340 566 L 428 556 L 430 584 L 342 596 Z" fill="#262626"/>'
+        '<path d="M 322 640 L 414 632 L 416 660 L 324 670 Z" fill="#262626"/>'
+        '<path d="M 684 566 L 596 556 L 594 584 L 682 596 Z" fill="#262626"/>'
+        '<path d="M 702 640 L 610 632 L 608 660 L 700 670 Z" fill="#262626"/>'
+        '<path d="M 330 796 L 408 804 L 406 832 L 332 824 Z" fill="#262626"/>'
+        '<path d="M 694 796 L 616 804 L 618 832 L 692 824 Z" fill="#262626"/></g>',
+        # redraw body outline over the clipped fills
+        f'<ellipse cx="512" cy="690" rx="195" ry="215" fill="none" stroke="{OUTLINE}" stroke-width="14"/>',
+        # stubby arms
+        '<g transform="rotate(14 322 700)">'
+        f'<ellipse cx="322" cy="700" rx="52" ry="78" fill="{ORANGE}" stroke="{OUTLINE}" stroke-width="12"/></g>',
+        '<g transform="rotate(-14 702 700)">'
+        f'<ellipse cx="702" cy="700" rx="52" ry="78" fill="{ORANGE}" stroke="{OUTLINE}" stroke-width="12"/></g>',
+        # round ears with cream inner
+        f'<circle cx="330" cy="170" r="60" fill="{ORANGE}" stroke="{OUTLINE}" stroke-width="12"/>',
+        f'<circle cx="694" cy="170" r="60" fill="{ORANGE}" stroke="{OUTLINE}" stroke-width="12"/>',
+        '<clipPath id="rimau-ear-l"><circle cx="330" cy="170" r="60"/></clipPath>',
+        '<clipPath id="rimau-ear-r"><circle cx="694" cy="170" r="60"/></clipPath>',
+        f'<g clip-path="url(#rimau-ear-l)"><ellipse cx="322" cy="120" rx="50" ry="32" fill="{CREAM}"/></g>',
+        f'<g clip-path="url(#rimau-ear-r)"><ellipse cx="702" cy="120" rx="50" ry="32" fill="{CREAM}"/></g>',
+        # head
+        f'<ellipse cx="512" cy="372" rx="246" ry="224" fill="{ORANGE}" stroke="{OUTLINE}" stroke-width="14"/>',
+        # forehead stripes
+        '<path d="M 500 176 L 512 248 L 524 176 Z" fill="#262626"/>',
+        '<path d="M 434 184 L 446 240 L 462 178 Z" fill="#262626"/>',
+        '<path d="M 590 184 L 578 240 L 562 178 Z" fill="#262626"/>',
+        # cheek stripes, clipped to the head
+        '<clipPath id="rimau-head-clip">'
+        '<ellipse cx="512" cy="372" rx="246" ry="224"/></clipPath>',
+        '<g clip-path="url(#rimau-head-clip)">'
+        '<path d="M 262 366 L 348 358 L 350 384 L 264 394 Z" fill="#262626"/>'
+        '<path d="M 272 416 L 344 410 L 346 434 L 274 442 Z" fill="#262626"/>'
+        '<path d="M 762 366 L 676 358 L 674 384 L 760 394 Z" fill="#262626"/>'
+        '<path d="M 752 416 L 680 410 L 678 434 L 750 442 Z" fill="#262626"/></g>',
+        # redraw head outline over the cheek stripes
+        f'<ellipse cx="512" cy="372" rx="246" ry="224" fill="none" stroke="{OUTLINE}" stroke-width="14"/>',
+        # cream muzzle, nose, whisker dots
+        f'<ellipse cx="512" cy="470" rx="118" ry="74" fill="{CREAM}"/>',
+        '<path d="M 486 448 Q 512 438 538 448 Q 546 458 534 472 Q 522 482 512 482 '
+        'Q 502 482 490 472 Q 478 458 486 448 Z" fill="#262626"/>',
+        f'<path d="M 512 482 L 512 500" stroke="{OUTLINE}" stroke-width="8" fill="none"/>',
+        '<g fill="#262626" opacity="0.45">'
+        '<circle cx="444" cy="464" r="4"/><circle cx="434" cy="482" r="4"/>'
+        '<circle cx="580" cy="464" r="4"/><circle cx="590" cy="482" r="4"/></g>',
+        # eyes
+        eyes,
+        # blush
+        '<ellipse cx="360" cy="468" rx="40" ry="22" fill="#EFA3AC" opacity="0.55"/>',
+        '<ellipse cx="664" cy="468" rx="40" ry="22" fill="#EFA3AC" opacity="0.55"/>',
+        mouth,
+    ]
+    return "".join(parts)
+
+
 # -------------------------------------------------------------- emotion variants
 def _brow(d: str) -> str:
     return f'<path d="{d}" fill="none" stroke="{OUTLINE}" stroke-width="10"/>'
@@ -439,6 +551,66 @@ def kiki_sad_close() -> str:
     )
 
 
+def rimau_happy_open() -> str:
+    return (
+        '<clipPath id="rimau-happy-clip">'
+        '<path d="M 432 496 Q 512 478 592 496 Q 588 546 512 562 Q 436 546 432 496 Z"/>'
+        "</clipPath>"
+        '<path d="M 432 496 Q 512 478 592 496 Q 588 546 512 562 Q 436 546 432 496 Z" '
+        f'fill="#7A3B44" stroke="{OUTLINE}" stroke-width="11"/>'
+        '<g clip-path="url(#rimau-happy-clip)">'
+        '<rect x="492" y="492" width="40" height="16" rx="8" fill="#FFFFFF"/>'
+        '<ellipse cx="512" cy="576" rx="36" ry="18" fill="#E98A96"/></g>'
+    )
+
+
+def rimau_happy_close() -> str:
+    return (
+        '<path d="M 436 516 Q 512 570 588 516" fill="none" '
+        f'stroke="{OUTLINE}" stroke-width="11"/>'
+    )
+
+
+def rimau_surprised_open() -> str:
+    return (
+        '<clipPath id="rimau-surprised-clip">'
+        '<ellipse cx="512" cy="528" rx="42" ry="42"/></clipPath>'
+        '<ellipse cx="512" cy="528" rx="42" ry="42" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="11"/>'
+        '<g clip-path="url(#rimau-surprised-clip)">'
+        '<ellipse cx="512" cy="552" rx="24" ry="14" fill="#E98A96"/></g>'
+    )
+
+
+def rimau_surprised_close() -> str:
+    return (
+        '<ellipse cx="512" cy="530" rx="13" ry="15" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="8"/>'
+    )
+
+
+def rimau_thinking_open() -> str:
+    return (
+        '<ellipse cx="512" cy="524" rx="32" ry="11" fill="#7A3B44" '
+        f'stroke="{OUTLINE}" stroke-width="9"/>'
+    )
+
+
+def rimau_thinking_close() -> str:
+    return f'<path d="M 476 524 L 548 524" fill="none" stroke="{OUTLINE}" stroke-width="9"/>'
+
+
+def rimau_sad_open() -> str:
+    return (
+        '<path d="M 448 560 Q 512 528 576 560 Q 552 574 512 576 Q 472 574 448 560 Z" '
+        f'fill="#7A3B44" stroke="{OUTLINE}" stroke-width="11"/>'
+    )
+
+
+def rimau_sad_close() -> str:
+    return f'<path d="M 456 548 Q 512 532 568 548" fill="none" stroke="{OUTLINE}" stroke-width="10"/>'
+
+
 MOMO_EYES = {
     "happy": momo_eyes_happy,
     "surprised": momo_eyes_surprised,
@@ -463,16 +635,28 @@ KIKI_MOUTHS = {
     "thinking": (kiki_thinking_open, kiki_thinking_close),
     "sad": (kiki_sad_open, kiki_sad_close),
 }
+# Rimau reuses Momo's round eye set for every emotion (same face geometry).
+RIMAU_EYES = MOMO_EYES
+RIMAU_MOUTHS = {
+    "happy": (rimau_happy_open, rimau_happy_close),
+    "surprised": (rimau_surprised_open, rimau_surprised_close),
+    "thinking": (rimau_thinking_open, rimau_thinking_close),
+    "sad": (rimau_sad_open, rimau_sad_close),
+}
+
+CHARACTERS = {
+    "momo": (momo_body, MOMO_EYES, MOMO_MOUTHS),
+    "kiki": (kiki_body, KIKI_EYES, KIKI_MOUTHS),
+    "rimau": (rimau_body, RIMAU_EYES, RIMAU_MOUTHS),
+}
 
 
 def emotion_body(character: str, emotion: str, state: str) -> str:
     """Same body as the base art; only the expression groups change."""
-    eyes = (MOMO_EYES if character == "momo" else KIKI_EYES)[emotion]()
-    mouths = (MOMO_MOUTHS if character == "momo" else KIKI_MOUTHS)[emotion]
-    mouth = mouths[0 if state == "open" else 1]()
-    if character == "momo":
-        return svg_wrap(momo_body(mouth, eyes), None)
-    return svg_wrap(kiki_body(mouth, eyes), None)
+    body, eyes_map, mouths_map = CHARACTERS[character]
+    eyes = eyes_map[emotion]()
+    mouth = mouths_map[emotion][0 if state == "open" else 1]()
+    return svg_wrap(body(mouth, eyes), None)
 
 
 def check_frame(path: Path) -> None:
@@ -520,7 +704,7 @@ def generate_emotions() -> None:
 
 def deploy_emotions() -> None:
     roots = [ART_ROOT / "templates" / name / "assets" / "images" for name in TEMPLATE_NAMES]
-    roots.append(ART_ROOT / "projects" / "hf-demo" / "assets" / "images")
+    roots.append(ART_ROOT / "projects" / "rimau-intro" / "assets" / "images")
     copied = 0
     for character in ("momo", "kiki"):
         for emotion in EMOTIONS:
@@ -532,6 +716,71 @@ def deploy_emotions() -> None:
                     shutil.copyfile(src, dest_dir / f"{emotion}_{state}.png")
                     copied += 1
     logger.info("deployed %d emotion PNGs to %d asset roots", copied, len(roots))
+
+
+RIMAU_DEPLOY_NAMES = {
+    "rimau_mouth_open.png": "mouth_open.png",
+    "rimau_mouth_close.png": "mouth_close.png",
+    "rimau_happy_open.png": "happy_open.png",
+    "rimau_happy_close.png": "happy_close.png",
+    "rimau_surprised_open.png": "surprised_open.png",
+    "rimau_surprised_close.png": "surprised_close.png",
+    "rimau_thinking_open.png": "thinking_open.png",
+    "rimau_thinking_close.png": "thinking_close.png",
+    "rimau_sad_open.png": "sad_open.png",
+    "rimau_sad_close.png": "sad_close.png",
+}
+
+
+def generate_rimau() -> None:
+    RIMAU_DIR.mkdir(parents=True, exist_ok=True)
+    base = {}
+    for state in ("open", "close"):
+        mouth = rimau_mouth_open() if state == "open" else rimau_mouth_close()
+        filename = f"rimau_mouth_{state}.png"
+        svg_str = svg_wrap(rimau_body(mouth), None)
+        svg_path = RIMAU_DIR / filename.replace(".png", ".svg")
+        svg_path.write_text(svg_str, encoding="utf-8")
+        out_path = RIMAU_DIR / filename
+        render(svg_str, out_path)
+        check_frame(out_path)
+        base[state] = out_path
+    verify_pair(
+        base["open"], base["close"], EMO_DIFF_BOX["rimau"], "rimau",
+    )
+    check_character_presentation(
+        "rimau", base["open"], base["close"], (430, 490, 594, 585),
+    )
+    for emotion in EMOTIONS:
+        frames = {}
+        for state in ("open", "close"):
+            filename = f"rimau_{emotion}_{state}.png"
+            svg_str = emotion_body("rimau", emotion, state)
+            svg_path = RIMAU_DIR / filename.replace(".png", ".svg")
+            svg_path.write_text(svg_str, encoding="utf-8")
+            out_path = RIMAU_DIR / filename
+            render(svg_str, out_path)
+            check_frame(out_path)
+            frames[state] = out_path
+        verify_pair(
+            frames["open"], frames["close"],
+            EMO_DIFF_BOX["rimau"], f"rimau-{emotion}",
+        )
+        verify_pair(
+            frames["open"], base["open"],
+            FACE_BOX["rimau"], f"rimau-{emotion}-open-vs-base",
+        )
+        verify_pair(
+            frames["close"], base["close"],
+            FACE_BOX["rimau"], f"rimau-{emotion}-close-vs-base",
+        )
+
+
+def deploy_rimau() -> None:
+    RIMAU_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+    for src_name, dest_name in RIMAU_DEPLOY_NAMES.items():
+        shutil.copyfile(RIMAU_DIR / src_name, RIMAU_PROJECT_DIR / dest_name)
+    logger.info("deployed %d rimau PNGs to %s", len(RIMAU_DEPLOY_NAMES), RIMAU_PROJECT_DIR)
 
 
 # --------------------------------------------------------------------- pipeline
@@ -588,64 +837,74 @@ def verify_pair(open_png: Path, close_png: Path, box: tuple[int, int, int, int],
         raise RuntimeError(f"{name}: changes leak outside the region: bbox={bbox}")
 
 
-def check_presentation() -> None:
+def check_character_presentation(
+    name: str,
+    open_path: Path,
+    close_path: Path,
+    mbox: tuple[int, int, int, int],
+) -> None:
     """Check canvas size, background, centering, and mouth colors per variant."""
     from PIL import Image  # noqa: PLC0415
 
+    for variant, path in (("open", open_path), ("close", close_path)):
+        img = Image.open(path).convert("RGBA")
+        if img.size != (SIZE, SIZE):
+            raise RuntimeError(f"{path.name}: wrong size {img.size}")
+        px = img.load()
+        corners = [px[5, 5], px[SIZE - 6, 5], px[5, SIZE - 6], px[SIZE - 6, SIZE - 6]]
+        if any(c[3] != 0 for c in corners):
+            raise RuntimeError(f"{path.name}: corners not transparent: {corners}")
+        # ink bbox: any pixel with alpha
+        xs, ys = [], []
+        for y in range(0, SIZE, 2):
+            for x in range(0, SIZE, 2):
+                if px[x, y][3] > 0:
+                    xs.append(x)
+                    ys.append(y)
+        bbox = (min(xs), min(ys), max(xs), max(ys))
+        cx, cy = (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
+        ok_pos = bbox[0] > 20 and bbox[1] > 20 and bbox[2] < SIZE - 21 and bbox[3] < SIZE - 21
+        ok_center = abs(cx - SIZE / 2) < 60 and abs(cy - SIZE / 2) < 80
+        logger.info(
+            "%s: ink bbox=%s center=(%.0f,%.0f) margins-ok=%s centered=%s",
+            path.name, bbox, cx, cy, ok_pos, ok_center,
+        )
+        if not (ok_pos and ok_center):
+            raise RuntimeError(f"{path.name}: bad placement bbox={bbox}")
+        # mouth color counts inside the mouth box
+        def count(target_hex: str) -> int:
+            t = tuple(int(target_hex[i : i + 2], 16) for i in (1, 3, 5))
+            n = 0
+            for y in range(mbox[1], mbox[3]):
+                for x in range(mbox[0], mbox[2]):
+                    p = px[x, y]
+                    if all(abs(p[i] - t[i]) <= 3 for i in range(3)):
+                        n += 1
+            return n
+
+        maroon = count("#7A3B44")
+        tongue = count("#E98A96")
+        if variant == "open":
+            ok = maroon > 200 and tongue > 30
+        else:
+            ok = maroon < 20 and tongue < 20
+        logger.info(
+            "%s: mouth box maroon=%d tongue=%d -> %s",
+            path.name, maroon, tongue, "PASS" if ok else "FAIL",
+        )
+        if not ok:
+            raise RuntimeError(f"{path.name}: mouth color check failed")
+
+
+def check_presentation() -> None:
     expected = {
         "momo": (430, 510, 595, 600),
         "kiki": (420, 410, 610, 545),
     }
     for name, mbox in expected.items():
-        for variant in ("open", "close"):
-            path = OUT_DIR / f"{name}_{variant}.png"
-            img = Image.open(path).convert("RGBA")
-            if img.size != (SIZE, SIZE):
-                raise RuntimeError(f"{path.name}: wrong size {img.size}")
-            px = img.load()
-            corners = [px[5, 5], px[SIZE - 6, 5], px[5, SIZE - 6], px[SIZE - 6, SIZE - 6]]
-            if any(c[3] != 0 for c in corners):
-                raise RuntimeError(f"{path.name}: corners not transparent: {corners}")
-            # ink bbox: any pixel with alpha
-            xs, ys = [], []
-            for y in range(0, SIZE, 2):
-                for x in range(0, SIZE, 2):
-                    if px[x, y][3] > 0:
-                        xs.append(x)
-                        ys.append(y)
-            bbox = (min(xs), min(ys), max(xs), max(ys))
-            cx, cy = (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
-            ok_pos = bbox[0] > 20 and bbox[1] > 20 and bbox[2] < SIZE - 21 and bbox[3] < SIZE - 21
-            ok_center = abs(cx - SIZE / 2) < 60 and abs(cy - SIZE / 2) < 80
-            logger.info(
-                "%s: ink bbox=%s center=(%.0f,%.0f) margins-ok=%s centered=%s",
-                path.name, bbox, cx, cy, ok_pos, ok_center,
-            )
-            if not (ok_pos and ok_center):
-                raise RuntimeError(f"{path.name}: bad placement bbox={bbox}")
-            # mouth color counts inside the mouth box
-            def count(target_hex: str) -> int:
-                t = tuple(int(target_hex[i : i + 2], 16) for i in (1, 3, 5))
-                n = 0
-                for y in range(mbox[1], mbox[3]):
-                    for x in range(mbox[0], mbox[2]):
-                        p = px[x, y]
-                        if all(abs(p[i] - t[i]) <= 3 for i in range(3)):
-                            n += 1
-                return n
-
-            maroon = count("#7A3B44")
-            tongue = count("#E98A96")
-            if variant == "open":
-                ok = maroon > 200 and tongue > 30
-            else:
-                ok = maroon < 20 and tongue < 20
-            logger.info(
-                "%s: mouth box maroon=%d tongue=%d -> %s",
-                path.name, maroon, tongue, "PASS" if ok else "FAIL",
-            )
-            if not ok:
-                raise RuntimeError(f"{path.name}: mouth color check failed")
+        check_character_presentation(
+            name, OUT_DIR / f"{name}_open.png", OUT_DIR / f"{name}_close.png", mbox,
+        )
 
 
 def main() -> None:
@@ -672,9 +931,11 @@ def main() -> None:
     check_presentation()
     generate_emotions()
     deploy_emotions()
+    generate_rimau()
+    deploy_rimau()
     logger.info(
-        "done: 4 base PNGs in %s, 16 emotion PNGs in %s, deployed to templates + demo",
-        OUT_DIR, EMO_DIR,
+        "done: 4 base PNGs in %s, 16 emotion PNGs in %s, 10 rimau PNGs in %s",
+        OUT_DIR, EMO_DIR, RIMAU_DIR,
     )
 
 

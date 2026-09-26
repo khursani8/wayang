@@ -13,28 +13,35 @@ interface SubtitleProps {
   character: CharacterId;
 }
 
-// BudouXで分割したテキストをレンダリングするコンポーネント
-const BudouXText = ({ text }: { text: string }) => {
-  // まず\nで行分割し、各行をBudouXで処理
+// CJK 行は BudouX で改行位置を決め、それ以外（ラテン文字など）は
+// ブラウザの単語折り返しに任せる。字幕基準: 1行約42字、最大2行。
+const CJK = /[぀-ヿ㐀-䶿一-鿿豈-﫿ｦ-ﾟ]/;
+
+const SegmentedText = ({ text }: { text: string }) => {
+  // まず改行で行分割し、CJK行だけ BudouX で処理する
   const lines = useMemo(() => {
-    return text.split("\n").map((line) => parser.parse(line));
+    return text.split("\n").map((line) => (CJK.test(line) ? parser.parse(line) : [line]));
   }, [text]);
 
   return (
     <>
       {lines.map((segments, lineIndex) => (
         <span key={lineIndex}>
-          {segments.map((segment, index) => (
-            <span
-              key={index}
-              style={{
-                display: "inline-block",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {segment}
-            </span>
-          ))}
+          {segments.map((segment, index) =>
+            CJK.test(segment) ? (
+              <span
+                key={index}
+                style={{
+                  display: "inline-block",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {segment}
+              </span>
+            ) : (
+              <span key={index}>{segment}</span>
+            ),
+          )}
           {lineIndex < lines.length - 1 && <br />}
         </span>
       ))}
@@ -73,6 +80,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
     fontWeight: font.weight as React.CSSProperties["fontWeight"],
     lineHeight: 1.5,
     fontFamily: `'${font.family}', 'Hiragino Maru Gothic ProN', sans-serif`,
+    overflowWrap: "anywhere",
   };
 
   return (
@@ -89,7 +97,14 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
       }}
     >
       {/* 袋文字: アウトラインと本文を重ねて表示 */}
-      <div style={{ position: "relative", display: "inline-block" }}>
+      <div
+        style={{
+          position: "relative",
+          display: "inline-block",
+          textWrap: "balance",
+          maxWidth: "100%",
+        }}
+      >
         {/* アウトライン（後ろ） */}
         <span
           style={{
@@ -102,7 +117,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
             paintOrder: "stroke fill",
           }}
         >
-          <BudouXText text={text} />
+          <SegmentedText text={text} />
         </span>
         {/* 本文（前） */}
         <span
@@ -112,7 +127,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
             color: textColor,
           }}
         >
-          <BudouXText text={text} />
+          <SegmentedText text={text} />
         </span>
       </div>
     </div>

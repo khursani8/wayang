@@ -132,6 +132,16 @@ for (const line of script) {
 }
 if (engineScript.length === 0) die("script is empty");
 
+// Subtitle standard: ~42 chars per line, max 2 lines (Netflix TTSG).
+for (const line of engineScript) {
+  const len = String(line.text).replace(/\s+/g, "").length;
+  if (len > 84) {
+    console.warn(
+      `[map-project] WARNING: script id ${line.id}: ${len} chars — subtitle wraps past 2 lines`
+    );
+  }
+}
+
 // ---- defaults.yaml ----
 const engineDefaultsYaml = {
   newLine: {

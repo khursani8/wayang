@@ -89,6 +89,11 @@ placeholder wavs. Never mixed in one project.
 - `generate-voices.ts` reads speaker ids from characters.yaml and fps/rate
   from video-settings.yaml; wav duration is parsed in node (upstream shelled
   out to python3); unknown characters throw instead of being skipped.
+- `Subtitle.tsx` wraps CJK lines with BudouX and other scripts with normal
+  word wrap plus `text-wrap: balance` and `overflow-wrap: anywhere`, so
+  Latin-script subtitles center and wrap instead of overflowing right.
+  Font size never auto-shrinks; lines over ~84 visible chars (2-line
+  standard, ~42/line) warn at build time via map-project.
 
 ## Environment
 

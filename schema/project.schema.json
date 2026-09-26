@@ -168,6 +168,9 @@
               "minimum": 0
             }
           }
+        },
+        "background": {
+          "type": "string"
         }
       }
     },

@@ -68,6 +68,9 @@ const engineDefaults = {
 };
 const engineSettings = structuredClone(engineDefaults);
 for (const section of Object.keys(settings)) {
+  if (section === "background") {
+    continue; // handled after the gates: vendor-owned theme catalog
+  }
   const map = settingsMap[section];
   if (!map) die(`settings: unknown section '${section}' (allowed: ${Object.keys(settingsMap).join(", ")})`);
   for (const key of Object.keys(settings[section])) {
@@ -248,6 +251,29 @@ for (const line of engineScript) {
   expectedFrames += adjustedFrames(d) + adjustedFrames(line.pauseAfter ?? 15);
 }
 fs.writeFileSync(path.join(workDir, "expected-seconds.txt"), (expectedFrames / fps).toFixed(3));
+
+// ---- background theme: project custom file > named theme > engine default ----
+const vendorDir = path.resolve(workDir, "..", "..");
+const catalogDir = path.join(vendorDir, "assets", "backgrounds");
+const catalog = fs.existsSync(catalogDir)
+  ? fs.readdirSync(catalogDir).filter((f) => f.endsWith(".png")).map((f) => f.replace(".png", ""))
+  : [];
+if (settings.background !== undefined) {
+  if (typeof settings.background !== "string" || !/^[a-z0-9-]+$/.test(settings.background)) {
+    die("settings.background must be a theme name (lowercase, digits, dashes)");
+  }
+  if (!catalog.includes(settings.background)) {
+    die(`settings.background: unknown theme '${settings.background}' (available: ${catalog.join(", ")})`);
+  }
+}
+const projectBackground = path.join(projectDir, "assets", "background.png");
+if (fs.existsSync(projectBackground)) {
+  console.log("[map-project] background: project custom override (assets/background.png)");
+} else {
+  const theme = settings.background ?? "chalkboard";
+  fs.copyFileSync(path.join(catalogDir, `${theme}.png`), path.join(workDir, "public", "background.png"));
+  console.log(`[map-project] background theme: ${theme}`);
+}
 
 console.log(`[map-project] characters: ${charIds.join(", ")}`);
 console.log(`[map-project] lines: ${engineScript.length}, fps: ${fps}, playbackRate: ${playbackRate}, estimate_cps: ${cps}`);

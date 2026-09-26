@@ -26,6 +26,8 @@ comments. Core rules:
   vendor must not require rewriting the YAML.
 - Timing units: seconds everywhere in canonical YAML. The vendor converts to
   engine units.
+- `settings.background` names a background theme; the catalog is
+  vendor-defined (see the vendor AGENTS.md). Unknown themes error.
 - `vendor:` holds engine-specific keys. Each vendor documents its keys in its
   AGENTS.md. Unknown or unsupported keys must error, never be dropped.
 

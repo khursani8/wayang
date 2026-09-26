@@ -7,6 +7,12 @@ engine. The platform contract is in the root `AGENTS.md`.
 
 - Remotion renders React components frame by frame to mp4. Composition:
   `src/index.ts` -> `Root` -> `Main`. `npm run build` = sync + render.
+- Background themes: `vendors/remotion/assets/backgrounds/` holds the
+  catalog (chalkboard, whiteboard, night-sky, kraft-paper, batik, notebook,
+  sunrise, studio, riverbank, slate, wood-table). Select with
+  `settings.background: <name>`; unknown themes error; per-project custom
+  art overrides via `assets/background.png`. Generators: repo-root
+  `assets/background/`.
 - Background: `engine/public/background.png` is a synthesized chalkboard
   (generator: repo-root `assets/background/generate_background.py`, SVG
   sources alongside). It replaces the old flat divs in Main.tsx. A project
@@ -55,6 +61,7 @@ the workdir is rebuilt from scratch every run.
 | script[].emotion | script.yaml emotion | normal, happy, surprised, thinking, sad |
 | script[].visual | script.yaml visual | type text/image/none, font_size->fontSize |
 | script[].se | script.yaml se | src relative to public/ |
+| settings.background | public/background.png | theme name from the catalog; project custom file wins |
 | settings.* | video-settings.yaml | snake_case -> camelCase, unknown keys error |
 | vendor.remotion.estimate_cps | timing estimate | chars per second, default 7.5 |
 

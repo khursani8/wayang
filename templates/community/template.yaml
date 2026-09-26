@@ -1,0 +1,105 @@
+# =============================================================
+# community template - casual 2-character community announcement
+# Works as-is after init. Edit characters, script, settings.
+# =============================================================
+meta:
+  title: "コミュニティ交流会のご案内"
+  template: community
+  vendor: remotion
+  language: ja
+  description: "カジュアルな告知動画のサンプル"
+
+characters:
+  usagi:
+    name: うさぎ
+    color: "#FF7043"
+    position: left
+    voice:
+      engine: voicevox
+      speaker_id: 2
+  kappa:
+    name: かっぱ
+    color: "#29B6F6"
+    position: right
+    voice:
+      engine: voicevox
+      speaker_id: 3
+
+script:
+  - id: 1
+    character: usagi
+    text: "きいてきいて、交流会やることになったよ！"
+    scene: 1
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "コミュニティ交流会"
+      font_size: 96
+      color: "#ffffff"
+      animation: bounce
+  - id: 2
+    character: kappa
+    text: "日時は九月三十日、夜七時からのだ。"
+    scene: 1
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "9/30 19:00 JST"
+      font_size: 84
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 3
+    character: usagi
+    text: "場所はオンライン、参加費は無料だよ。"
+    scene: 2
+    pause_after: 0.4
+  - id: 4
+    character: kappa
+    text: "持ち寄りトークも歓迎なのだ！"
+    scene: 2
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "LT 大歓迎"
+      font_size: 88
+      color: "#ffffff"
+      animation: slideLeft
+  - id: 5
+    character: usagi
+    text: "参加したい人はコメントしてね！"
+    scene: 3
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "参加はコメントで！"
+      font_size: 88
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 6
+    character: kappa
+    text: "それでは当日会えるのを楽しみにしているのだ。"
+    scene: 3
+    pause_after: 1.0
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 70
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: false
+
+vendor:
+  remotion:
+    estimate_cps: 7.5

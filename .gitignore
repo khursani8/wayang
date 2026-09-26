@@ -1,0 +1,8 @@
+node_modules/
+vendors/remotion/.work/
+projects/
+out/
+*.log
+.rumpun/runs/
+.rumpun/seasons/_steady-state*
+.rumpun/seasons/_competition.yaml

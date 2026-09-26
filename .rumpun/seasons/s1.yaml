@@ -1,0 +1,41 @@
+id: s1
+parent: null
+goal: "Ship content_engine MVP: education + community templates, canonical project YAML schema, vendors/remotion port with AGENTS.md contract, tools/ce.py init/validate/render."
+metric: "E2E green when a fresh education project renders to mp4 through vendors/remotion from its filled project.yaml with no manual fixes."
+mode: fight
+methodology:
+  approach: "contract-first platform: canonical YAML + per-vendor AGENTS.md; three-model design consult (codex gpt-5.5, glm-5.3, fable) before schema freeze; then build and prove with a real render"
+  evidence: []
+  pipeline:
+    - phase: design-review
+      primitive: execute
+      agents: writers
+      prompt: prompts/base/design-brief.md
+      writes: .rumpun/runs/reviews
+    - phase: integrate
+      primitive: evaluate
+      agents: writers
+      prompt: prompts/base/evaluate.md
+      reads: .rumpun/runs/reviews
+      writes: .rumpun/runs/design-decisions.md
+writers:
+  - name: codex
+    route: gpt-5.5
+    lane: design-review
+    prompt: prompts/base/design-brief.md
+    knowledge: none
+    budget: {minutes: 15}
+  - name: glm
+    route: glm-5.3
+    lane: design-review
+    prompt: prompts/base/design-brief.md
+    knowledge: none
+    budget: {minutes: 15}
+  - name: fable
+    route: fable
+    lane: design-review
+    prompt: prompts/base/design-brief.md
+    knowledge: full
+    budget: {minutes: 15}
+stop:
+  "on": [all_exited]

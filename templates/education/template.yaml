@@ -1,0 +1,100 @@
+# =============================================================
+# education template - 2-character lesson video
+# This file IS a working sample: init copies it as project.yaml
+# and it renders as-is. Edit characters, script, settings.
+# =============================================================
+meta:
+  title: "光合成のひみつ"
+  template: education
+  vendor: remotion
+  language: ja
+  description: "2キャラ解説レッスンのサンプル"
+
+characters:
+  zundamon:
+    name: ずんだもん
+    color: "#228B22"
+    position: right
+    voice:
+      engine: voicevox
+      speaker_id: 3
+  metan:
+    name: 四国めたん
+    color: "#FF1493"
+    position: left
+    voice:
+      engine: voicevox
+      speaker_id: 2
+
+script:
+  - id: 1
+    character: zundamon
+    text: "光合成って何なのだ？"
+    scene: 1
+    pause_after: 0.5
+    visual:
+      type: text
+      text: "光合成のひみつ"
+      font_size: 96
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 2
+    character: metan
+    text: "植物が太陽の光を使って養分を作るしくみのことだよ。"
+    scene: 1
+    pause_after: 0.5
+  - id: 3
+    character: zundamon
+    text: "空気中の二酸化炭素と水から、でん粉を作るのだ！"
+    scene: 2
+    pause_after: 0.5
+    visual:
+      type: text
+      text: "CO2 + H2O → でん粉"
+      font_size: 72
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 4
+    character: metan
+    text: "植物はみんな光合成の名人なんだ。"
+    scene: 2
+    pause_after: 0.5
+  - id: 5
+    character: zundamon
+    text: "だから森林は地球の肺って呼ばれるのだ！"
+    scene: 3
+    pause_after: 0.5
+    visual:
+      type: text
+      text: "森林 = 地球の肺"
+      font_size: 84
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 6
+    character: metan
+    text: "次の授業も楽しみにしてるね。"
+    scene: 3
+    pause_after: 1.0
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 70
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: false
+
+vendor:
+  remotion:
+    estimate_cps: 7.5

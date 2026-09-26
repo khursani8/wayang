@@ -1,0 +1,23 @@
+# キャラクター設定
+# 新しいキャラクターを追加する場合はここに定義
+
+zundamon:
+  name: ずんだもん
+  speakerId: 3
+  position: right
+  color: "#228B22"
+  defaultPauseAfter: 15
+
+metan:
+  name: 四国めたん
+  speakerId: 2
+  position: left
+  color: "#FF1493"
+  defaultPauseAfter: 15
+
+kuro_zunda:
+  name: くろずんだ
+  speakerId: null  # VOICEVOX非対応
+  position: right
+  color: "#333333"
+  defaultPauseAfter: 15

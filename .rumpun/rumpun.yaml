@@ -1,0 +1,32 @@
+# rumpun.yaml — campaign-level config. Season-level config lives in seasons/s<N>.yaml.
+schema: 1
+campaign:
+  goal: "Build content_engine: framework-agnostic YAML-template video platform. Templates (education, community) feed one canonical project YAML; vendors/<engine>/AGENTS.md is the engine contract agents consume. First vendor: remotion (ported from nyanko3141592/remotion-voicevox-template)."
+  metric: "E2E: ce.py init education demo -> fill project.yaml -> ce.py render projects/demo -> mp4 via vendors/remotion with no manual fixes."
+autonomy:
+  stage: manual
+  promote_after: {clean_audits: 5}
+  demote_on: {consecutive_rejects: 2}
+  panel:
+    families: [fable, glm, gpt-5.6-sol]
+    rule: majority
+    blinded: true
+  invariants: [goal_immutable, budget_cap, falsify_required]
+  on_reject:
+    action: rollback_to_last_good
+    pause: true
+    escalate_after: {consecutive_rejects: 2}
+budget:
+  campaign_cost_cap: 600
+routes:
+  glm: 'cat {prompt} | claude -p --dangerously-skip-permissions'
+  claude: 'env -u ANTHROPIC_BASE_URL -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY -u ANTHROPIC_DEFAULT_SONNET_MODEL -u ANTHROPIC_DEFAULT_OPUS_MODEL -u ANTHROPIC_DEFAULT_HAIKU_MODEL -u ANTHROPIC_DEFAULT_FABLE_MODEL sh -c ''cat {prompt} | claude -p --dangerously-skip-permissions --model claude-fable-5-1'''
+  gpt-6-astra: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra {prompt}'
+  gpt-6-sol: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol {prompt}'
+  gpt-6-luna: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-luna {prompt}'
+  gpt-reserve: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-reserve {prompt}'
+  gpt-5.6-sol: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-sol {prompt}'
+  gpt-5.6-terra: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-terra {prompt}'
+  gpt-5.6-luna: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.6-luna {prompt}'
+  gpt-5.5: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-5.5 {prompt}'
+  codex-auto-review: 'codex exec --dangerously-bypass-approvals-and-sandbox -m codex-auto-review {prompt}'

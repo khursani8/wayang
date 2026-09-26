@@ -1,0 +1,32 @@
+# スクリプトデータ
+# セリフを編集後、npm run sync-script で反映
+
+- id: 1
+  character: zundamon
+  text: ずんだもんなのだ！
+  scene: 1
+  pauseAfter: 15
+  visual:
+    type: text
+    text: "Remotion × VOICEVOX\nテンプレート"
+    fontSize: 80
+    color: "#ffffff"
+    animation: zoomIn
+
+- id: 2
+  character: metan
+  text: 四国めたんです。
+  scene: 1
+  pauseAfter: 15
+
+- id: 3
+  character: zundamon
+  text: このテンプレートで紹介動画が作れるのだ！
+  scene: 1
+  pauseAfter: 10
+
+- id: 4
+  character: metan
+  text: よろしくね。
+  scene: 1
+  pauseAfter: 30

@@ -13,7 +13,8 @@ engine. The platform contract is in the root `AGENTS.md`.
   `settings.background: <name>`; unknown themes error; per-project custom
   art overrides via `assets/background.png`. Generators: repo-root
   `assets/background/`.
-- Background: `engine/public/background.png` is a synthesized chalkboard
+- Background: `engine/public/background.png` is the default background
+  (riverbank, synthesized by repo-root `assets/background/` generators).
   (generator: repo-root `assets/background/generate_background.py`, SVG
   sources alongside). It replaces the old flat divs in Main.tsx. A project
   can override it by shipping `assets/background.png`; project assets are
@@ -61,7 +62,7 @@ the workdir is rebuilt from scratch every run.
 | script[].emotion | script.yaml emotion | normal, happy, surprised, thinking, sad |
 | script[].visual | script.yaml visual | type text/image/none, font_size->fontSize; text cards get a dark outline by default, override with outline_color |
 | script[].se | script.yaml se | src relative to public/ |
-| settings.background | public/background.png | theme name from the catalog; project custom file wins |
+| settings.background | public/background.png | theme name from the catalog; project custom file wins; default riverbank |
 | settings.* | video-settings.yaml | snake_case -> camelCase, unknown keys error |
 | vendor.remotion.estimate_cps | timing estimate | chars per second, default 7.5 |
 

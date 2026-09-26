@@ -271,7 +271,7 @@ const projectBackground = path.join(projectDir, "assets", "background.png");
 if (fs.existsSync(projectBackground)) {
   console.log("[map-project] background: project custom override (assets/background.png)");
 } else {
-  const theme = settings.background ?? "chalkboard";
+  const theme = settings.background ?? "riverbank";
   fs.copyFileSync(path.join(catalogDir, `${theme}.png`), path.join(workDir, "public", "background.png"));
   console.log(`[map-project] background theme: ${theme}`);
 }

@@ -358,7 +358,8 @@
               "enum": [
                 "text",
                 "image",
-                "none"
+                "none",
+                "terminal"
               ]
             },
             "text": {
@@ -386,8 +387,36 @@
             },
             "outline_color": {
               "type": "string"
+            },
+            "command": {
+              "type": "string"
+            },
+            "output": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "terminal"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "required": [
+                  "command"
+                ]
+              }
+            }
+          ]
         },
         "se": {
           "type": "object",

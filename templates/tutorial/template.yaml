@@ -1,0 +1,146 @@
+# =============================================================
+# tutorial template - one teacher, one step per line, commands
+# rendered as simulated terminal steps (vendor: hyperframes).
+# On remotion the terminal degrades to a command text card.
+# Works as-is after init.
+# =============================================================
+meta:
+  title: "Cara Guna Wayang"
+  template: tutorial
+  vendor: hyperframes
+  language: ms
+  description: "tutorial langkah demi langkah dengan terminal simulasi"
+
+characters:
+  momo:
+    name: Momo
+    color: "#37474F"
+    position: right
+    voice:
+      engine: revolab
+      voice_id: paan-f695215e
+
+script:
+  - id: 1
+    character: momo
+    text: "Hari ini: video pertama anda dalam tujuh langkah!"
+    scene: 1
+    pause_after: 0.8
+    visual:
+      type: text
+      text: "Cara Guna Wayang"
+      font_size: 96
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 2
+    character: momo
+    text: "Langkah satu: dapatkan repo dan pasang enjin."
+    scene: 1
+    pause_after: 1.4
+    visual:
+      type: terminal
+      command: "git clone https://github.com/khursani8/wayang.git && cd wayang && npm install --prefix vendors/remotion/engine"
+      output:
+        - "added 6 packages in 12ms"
+  - id: 3
+    character: momo
+    text: "Langkah dua: lihat semua templat yang ada."
+    scene: 2
+    pause_after: 1.2
+    visual:
+      type: terminal
+      command: "uv run tools/wayang.py templates"
+      output:
+        - "community"
+        - "dialog"
+        - "presentation"
+        - "storytelling"
+  - id: 4
+    character: momo
+    text: "Langkah tiga: cipta projek video anda."
+    scene: 2
+    pause_after: 1.2
+    visual:
+      type: terminal
+      command: "uv run tools/wayang.py init presentation video-tutorial"
+      output:
+        - "created projects/video-tutorial"
+  - id: 5
+    character: momo
+    text: "Langkah empat: tanya apa yang perlu diisi."
+    scene: 3
+    pause_after: 1.2
+    visual:
+      type: terminal
+      command: "uv run tools/wayang.py check projects/video-tutorial"
+      output:
+        - "FILL: meta.title is empty - name your video"
+        - "READY: 0 blockers"
+  - id: 6
+    character: momo
+    text: "Langkah lima: isi tajuk, watak, dan skrip anda."
+    scene: 3
+    pause_after: 1.2
+    visual:
+      type: text
+      text: "meta:  characters:  script:"
+      font_size: 72
+      color: "#ffffff"
+      animation: fadeIn
+  - id: 7
+    character: momo
+    text: "Langkah enam: sahkan semua tepat."
+    scene: 3
+    pause_after: 1.0
+    visual:
+      type: terminal
+      command: "uv run tools/wayang.py validate projects/video-tutorial"
+      output:
+        - "OK"
+  - id: 8
+    character: momo
+    text: "Langkah tujuh: render! Suara, jagaan masa, semua automatik."
+    scene: 3
+    pause_after: 1.4
+    visual:
+      type: terminal
+      command: "uv run tools/wayang.py render projects/video-tutorial"
+      output:
+        - "TTS source: revolab"
+        - "duration check: actual=20.736s expected=20.700s"
+        - "visibility lint: all checks passed"
+  - id: 9
+    character: momo
+    text: "Siap! Video anda di projects/video-tutorial/out."
+    scene: 3
+    pause_after: 1.0
+    visual:
+      type: text
+      text: "Siap!"
+      font_size: 92
+      color: "#ffffff"
+      animation: bounce
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  background: slate
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 66
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: true
+
+vendor:
+  hyperframes:
+    estimate_cps: 7.5

@@ -200,6 +200,7 @@ if (subMoved) {
 // ---- HTML generation ----
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clips = [];
+const tweenLines = [];
 let idSeq = 0;
 const clip = (inner, extraAttrs, style) => {
   idSeq += 1;
@@ -269,7 +270,32 @@ for (const seg of timeline) {
   const subStyle = `position:absolute;bottom:${Math.round(subBottomFinal)}px;left:50%;transform:translateX(-50%);width:${subWidthPct}%;text-align:center;font-family:'${fontFamily}',sans-serif;font-size:${fontSize}px;font-weight:${fontWeight};color:${font.color || "#ffffff"};-webkit-text-stroke:${Math.round(fontSize * 0.2)}px ${font.outline_color || "#1F2937"};paint-order:stroke fill;overflow-wrap:anywhere;text-wrap:balance;line-height:1.4`;
   clips.push(clip(`<div style="${subStyle}">${esc(text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 30, z: 30 }));
   const v = line.visual;
-  if (v && v.type === "image" && v.src) {
+  if (v && v.type === "terminal") {
+    if (!v.command) die(`script id ${line.id}: terminal visual needs a command`);
+    const outs = Array.isArray(v.output) ? v.output : [];
+    idSeq += 1;
+    const cmdId = `cmd-${idSeq}`;
+    const caretId = `caret-${idSeq}`;
+    const minH = 100 + (outs.length + 1) * 42;
+    let inner =
+      `<div style="background:#161B22;padding:10px 16px;display:flex;gap:8px;align-items:center">` +
+      `<span style="width:12px;height:12px;border-radius:50%;background:#FF5F56"></span>` +
+      `<span style="width:12px;height:12px;border-radius:50%;background:#FFBD2E"></span>` +
+      `<span style="width:12px;height:12px;border-radius:50%;background:#27C93F"></span>` +
+      `<span style="color:#8B949E;font-size:18px;margin-left:10px">wayang</span></div>` +
+      `<div style="padding:18px 24px;font-size:24px;line-height:1.6;color:#C9D1D9;text-align:left;min-height:${minH}px">` +
+      `<div><span style="color:#7EE787">$ </span><span id="${cmdId}" style="clip-path:inset(0 100% 0 0);white-space:nowrap">${esc(v.command)}</span><span id="${caretId}" style="color:#7EE787">▌</span></div>`;
+    outs.forEach((o, i) => {
+      const oid = `out-${idSeq}-${i}`;
+      inner += `<div id="${oid}" style="opacity:0;color:#8B949E;margin-top:8px;white-space:pre-wrap">${esc(o)}</div>`;
+      tweenLines.push(`tl.to("#${oid}", { opacity: 1, duration: 0.15 }, ${(seg.start + 0.9 + i * 0.4).toFixed(3)});`);
+    });
+    inner += `</div>`;
+    const typeDur = Math.min(1.2, Math.max(0.5, v.command.length * 0.045));
+    tweenLines.push(`tl.to("#${cmdId}", { clipPath: "inset(0 0% 0 0)", duration: ${typeDur.toFixed(2)}, ease: "none" }, ${(seg.start + 0.35).toFixed(3)});`);
+    tweenLines.push(`tl.to("#${caretId}", { opacity: 0 }, ${(seg.start + 0.35 + typeDur).toFixed(3)});`);
+    clips.push(clip(inner, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
+  } else if (v && v.type === "image" && v.src) {
     const maxH = v.font_size ? Math.min(v.font_size, H * 0.45) : H * 0.45;
     clips.push(clip(
       `<img src="${v.src}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:70%;max-height:${maxH}px;object-fit:contain;border-radius:12px" />`,
@@ -302,6 +328,7 @@ ${clips.join("\n")}
 <script>
 const tl = gsap.timeline({ paused: true });
 window.__timelines["main"] = tl;
+${tweenLines.join("\n")}
 tl.seek(0);
 </script>
 </body>

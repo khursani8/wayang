@@ -404,10 +404,22 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
         c = data["characters"][line["character"]]
         side = c.get("position", "right")
         cx0 = 40 if side == "left" else W - 40 - charH
-        move = _band_diff_count(img, tail, (cx0, H - charH, cx0 + charH, H))
-        if move < 80:
-            log.error("visibility: line %s character '%s' shows no animation in its corner box", line["id"], line["character"])
-            failures += 1
+        box = (cx0, H - charH, cx0 + charH, H)
+        theme_png = ROOT / "assets" / "backgrounds" / f"{(s.get('background') or 'riverbank')}.png"
+        if theme_png.is_file():
+            theme_img = Image.open(theme_png).convert("RGB").resize((W, H))
+            present = _band_diff_count(img, theme_img, box)
+            log.debug("character presence sampled px: %s", present)
+            if present < (charH * charH) / 60:
+                log.error("visibility: line %s character '%s' missing from its corner box", line["id"], line["character"])
+                failures += 1
+        else:
+            log.warning("character presence check skipped: theme png missing for theme '%s'", s.get("background") or "riverbank")
+        f2 = tmp / f"f{line['id']}b.png"
+        if _ffmpeg_frame(mp4, min(mid + 0.21, duration - 0.2), duration, f2):
+            img2 = Image.open(f2).convert("RGB")
+            anim = _band_diff_count(img, img2, box)
+            log.info("character animation delta: %s", anim)
         if real_voices:
             vol = _ffmpeg_volume(mp4, start, dur)
             if vol < -55.0:

@@ -110,7 +110,16 @@ for (const line of script) {
   if (line.scene) mapped.scene = line.scene;
   if (line.pause_after !== undefined) mapped.pauseAfter = Math.round(line.pause_after * fps);
   if (line.emotion) mapped.emotion = line.emotion;
-  if (line.visual && line.visual.type !== "none") {
+  if (line.visual && line.visual.type === "terminal") {
+    // Terminal steps degrade to a command text card here; the simulated
+    // terminal is a hyperframes feature.
+    if (!line.visual.command) die(`script id ${line.id}: terminal visual needs a command`);
+    const v = { type: "text", text: "$ " + line.visual.command };
+    if (line.visual.font_size) v.fontSize = line.visual.font_size;
+    if (line.visual.color) v.color = line.visual.color;
+    v.animation = line.visual.animation || "fadeIn";
+    mapped.visual = v;
+  } else if (line.visual && line.visual.type !== "none") {
     const v = { type: line.visual.type };
     if (line.visual.text) v.text = line.visual.text;
     if (line.visual.src) {

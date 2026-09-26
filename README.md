@@ -2,7 +2,7 @@
 
 Framework-agnostic video template platform. Fill one YAML, get a video.
 
-- Templates live in `templates/` (education, community).
+- Templates live in `templates/` (dialog, presentation, storytelling, community).
 - Each renders through a video engine under `vendors/<engine>/`. The engine
   contract is documented per vendor in `vendors/<engine>/AGENTS.md`.
 - Agents: start at `AGENTS.md`.
@@ -10,14 +10,14 @@ Framework-agnostic video template platform. Fill one YAML, get a video.
 ## Quickstart
 
     uv run tools/ce.py templates
-    uv run tools/ce.py init education my-video
+    uv run tools/ce.py init dialog my-video
     # edit projects/my-video/project.yaml (characters, script, settings)
     uv run tools/ce.py validate projects/my-video
     uv run tools/ce.py render projects/my-video
 
 Output: `projects/<name>/out/video.mp4`.
 
-Series: `uv run tools/ce.py init-series my-series --template education`
+Series: `uv run tools/ce.py init-series my-series --template dialog`
 creates `projects/my-series/series.yaml` plus the first episode. Episodes
 inherit characters and settings from series.yaml and override per key.
 Render every episode in order with

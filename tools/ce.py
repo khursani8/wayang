@@ -313,7 +313,7 @@ def main():
 
     p = sub.add_parser("init-series", help="scaffold a series: series.yaml + first episode")
     p.add_argument("name")
-    p.add_argument("--template", default="education")
+    p.add_argument("--template", default="dialog")
     p.add_argument("--first-episode", default="ep01")
     p.set_defaults(func=cmd_init_series)
 

@@ -1,0 +1,98 @@
+# =============================================================
+# presentation template - one presenter + big content cards
+# Works as-is after init. Scenes act as slide sections.
+# =============================================================
+meta:
+  title: "朝の習慣プレゼン"
+  template: presentation
+  vendor: remotion
+  language: ja
+  description: "1 presenter, card-driven slides, longer pauses"
+
+characters:
+  zundamon:
+    name: ずんだもん
+    color: "#228B22"
+    position: right
+    voice:
+      engine: voicevox
+      speaker_id: 3
+
+script:
+  - id: 1
+    character: zundamon
+    text: "おはようございます。今日は朝の習慣について話します。"
+    scene: 1
+    pause_after: 1.2
+    visual:
+      type: text
+      text: "朝の習慣"
+      font_size: 96
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 2
+    character: zundamon
+    text: "まず、起きたら水を一杯飲むのです。"
+    scene: 1
+    pause_after: 1.2
+    visual:
+      type: text
+      text: "1. 水を一杯飲む"
+      font_size: 80
+      color: "#ffffff"
+      animation: slideLeft
+  - id: 3
+    character: zundamon
+    text: "次に、太陽の光を浴びるのです。体が目覚めます。"
+    scene: 2
+    pause_after: 1.2
+    visual:
+      type: text
+      text: "2. 太陽の光を浴びる"
+      font_size: 80
+      color: "#ffffff"
+      animation: slideUp
+  - id: 4
+    character: zundamon
+    text: "ポイントは毎日続けることなのです。"
+    scene: 2
+    pause_after: 1.2
+  - id: 5
+    character: zundamon
+    text: "まとめです。水と光、そして継続。それだけなのです。"
+    scene: 3
+    pause_after: 1.5
+    visual:
+      type: text
+      text: "まとめ"
+      font_size: 88
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 6
+    character: zundamon
+    text: "ご清聴ありがとうございました。"
+    scene: 3
+    pause_after: 1.0
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 70
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: false
+
+vendor:
+  remotion:
+    estimate_cps: 7.5

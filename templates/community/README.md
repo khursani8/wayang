@@ -1,6 +1,6 @@
 # community template
 Casual announcement format for community posts: two hosts, big text
-cards, short lines. Same fill order as the education template.
+cards, short lines. Same fill order as the dialog template.
 walk through a topic in 2-3 scenes with big text cards.
 
 Fill order:

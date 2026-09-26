@@ -1,14 +1,13 @@
 # =============================================================
-# education template - 2-character lesson video
-# This file IS a working sample: init copies it as project.yaml
-# and it renders as-is. Edit characters, script, settings.
+# storytelling template - two-host narrative skit with emotions
+# Works as-is after init. Emotions show once you add character art.
 # =============================================================
 meta:
-  title: "光合成のひみつ"
-  template: education
+  title: "ちいさな宝物"
+  template: storytelling
   vendor: remotion
   language: ja
-  description: "2キャラ解説レッスンのサンプル"
+  description: "narrative skit, emotions sprinkled, mood cards"
 
 characters:
   zundamon:
@@ -18,12 +17,6 @@ characters:
     voice:
       engine: voicevox
       speaker_id: 3
-    # OpenAI TTS example (needs OPENAI_API_KEY):
-    # voice:
-    #   engine: openai
-    #   voice: alloy
-    #   model: gpt-4o-mini-tts
-    #   speed: 1.0
   metan:
     name: 四国めたん
     color: "#FF1493"
@@ -35,52 +28,57 @@ characters:
 script:
   - id: 1
     character: zundamon
-    text: "光合成って何なのだ？"
+    text: "きょう、川辺で光る石を見つけたのだ！"
     scene: 1
-    pause_after: 0.5
+    pause_after: 0.4
+    emotion: surprised
     visual:
       type: text
-      text: "光合成のひみつ"
-      font_size: 96
+      text: "光る石"
+      font_size: 90
       color: "#ffffff"
       animation: zoomIn
   - id: 2
     character: metan
-    text: "植物が太陽の光を使って養分を作るしくみのことだよ。"
+    text: "光る石？ただのガラスじゃないの？"
     scene: 1
-    pause_after: 0.5
+    pause_after: 0.4
+    emotion: thinking
   - id: 3
     character: zundamon
-    text: "空気中の二酸化炭素と水から、でん粉を作るのだ！"
+    text: "わふ！あったかい光が出てきたのだ！"
     scene: 2
-    pause_after: 0.5
+    pause_after: 0.6
+    emotion: happy
     visual:
       type: text
-      text: "CO2 + H2O → でん粉"
-      font_size: 72
+      text: "まばゆい光"
+      font_size: 84
       color: "#ffffff"
-      animation: zoomIn
+      animation: bounce
   - id: 4
     character: metan
-    text: "植物はみんな光合成の名人なんだ。"
+    text: "それは……ほんものの宝物かも。"
     scene: 2
-    pause_after: 0.5
+    pause_after: 0.6
+    emotion: surprised
   - id: 5
     character: zundamon
-    text: "だから森林は地球の肺って呼ばれるのだ！"
+    text: "きょうは一緒に探検してくれてありがとうなのだ。"
     scene: 3
-    pause_after: 0.5
+    pause_after: 0.4
     visual:
       type: text
-      text: "森林 = 地球の肺"
-      font_size: 84
+      text: "ちいさな宝物"
+      font_size: 88
       color: "#ffffff"
       animation: zoomIn
   - id: 6
     character: metan
-    text: "次の授業も楽しみにしてるね。"
+    text: "こちらこそ、また行こうね。"
     scene: 3
     pause_after: 1.0
+    emotion: happy
 
 settings:
   video:

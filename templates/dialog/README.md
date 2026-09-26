@@ -1,6 +1,6 @@
-# education template
-
-2-character lesson format: a question character and an explainer character
+# dialog template
+Two hosts in Q&A banter: one asks, one explains. Short lines, 2-3
+scenes, big text cards at key moments.
 walk through a topic in 2-3 scenes with big text cards.
 
 Fill order:

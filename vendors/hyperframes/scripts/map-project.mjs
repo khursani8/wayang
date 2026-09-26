@@ -282,13 +282,14 @@ for (const seg of timeline) {
     idSeq += 1;
     const cmdId = `cmd-${idSeq}`;
     let inner =
-      `<div style="background:#161B22;padding:12px 18px;display:flex;gap:9px;align-items:center">` +
+      `<div style="position:absolute;top:12%;left:50%;transform:translateX(-50%);width:76%;background:#161B22;border:2px solid #30363D;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden">` +
+      `<div style="background:#21262D;padding:10px 16px;display:flex;gap:9px;align-items:center">` +
       `<span style="width:13px;height:13px;border-radius:50%;background:#FF5F56"></span>` +
       `<span style="width:13px;height:13px;border-radius:50%;background:#FFBD2E"></span>` +
       `<span style="width:13px;height:13px;border-radius:50%;background:#27C93F"></span>` +
       `<span style="color:#8B949E;font-size:20px;margin-left:10px">wayang</span></div>` +
       `<div style="padding:22px 28px;font-size:${termFs}px;line-height:1.55;color:#C9D1D9;text-align:left;overflow-wrap:anywhere">` +
-      `<div><span style="color:#7EE787">$ </span>`;
+      `<div id="${cmdId}"><span style="color:#7EE787">$ </span>`;
     const cmdChars = [...String(v.command)];
     cmdChars.forEach((ch) => {
       inner += `<span class="ch" style="opacity:0">${esc(ch)}</span>`;
@@ -299,7 +300,7 @@ for (const seg of timeline) {
       inner += `<div id="${oid}" style="opacity:0;color:#9EAEBC;margin-top:12px;font-size:${outFs}px;white-space:pre-wrap">${esc(o)}</div>`;
       tweenLines.push(`tl.to("#${oid}", { opacity: 1, duration: 0.18 }, ${(seg.start + 0.9 + i * 0.5).toFixed(3)});`);
     });
-    inner += `</div>`;
+    inner += `</div></div>`;
     const typeStart = seg.start + 0.35;
     const typeDur = Math.min(1.6, Math.max(0.6, cmdChars.length * 0.035));
     tweenLines.push(`tl.to("#${cmdId} .ch", { opacity: 1, duration: 0.02, stagger: ${(typeDur / cmdChars.length).toFixed(4)}, ease: "none" }, ${typeStart.toFixed(3)});`);

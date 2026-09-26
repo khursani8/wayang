@@ -37,8 +37,8 @@ else `project.yaml`.
 | script[].pause_after | subtitle/card tail | seconds, natural speed |
 | script[].emotion | - | needs emotion art variants; otherwise invisible |
 | script[].visual.type text | centered text card per line | dark outline by default, override with outline_color |
-| script[].visual.type image | - | not supported yet: errors |
-| script[].se | - | not supported yet: errors |
+| script[].visual.type image | centered image card | src relative to the project; asset ships in the project |
+| script[].se | per-line audio clip | src relative to the project; duration probed; data-volume honored |
 | settings.background | background.png | theme from the shared catalog, riverbank default; project custom file wins |
 | settings.font / subtitle / character | css | font, subtitle placement, character height, use_images |
 | vendor.hyperframes.estimate_cps | timing estimate | chars per second, default 7.5 |

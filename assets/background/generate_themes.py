@@ -11,7 +11,7 @@ from pathlib import Path
 
 import cairosvg
 
-OUT = Path("/mnt/data/work/content_engine/vendors/remotion/assets/backgrounds")
+OUT = Path("/mnt/data/work/content_engine/assets/backgrounds")
 W, H = 1920, 1080
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -128,13 +128,23 @@ def sunrise():
 
 def studio():
     defs = (
-        '<radialGradient id="g" cx="0.5" cy="0.42" r="0.75">'
+        '<radialGradient id="g" cx="0.5" cy="0.40" r="0.85">'
         '<stop offset="0" stop-color="#FFFFFF"/>'
-        '<stop offset="1" stop-color="#CFD8DC"/>'
+        '<stop offset="0.55" stop-color="#E3E8EC"/>'
+        '<stop offset="1" stop-color="#9FB0BA"/>'
         "</radialGradient>"
     )
-    body = f'<rect width="{W}" height="{H}" fill="url(#g)"/>'
-    checks = [(960, 450, "#FFFFFF", 8), (30, 30, "#CFD8DC", 16)]
+    body = [
+        f'<rect width="{W}" height="{H}" fill="url(#g)"/>',
+        # stage floor: darker band across the lower third
+        f'<rect x="0" y="{int(H * 0.72)}" width="{W}" height="{H - int(H * 0.72)}" fill="#B7C4CC"/>',
+        f'<rect x="0" y="{int(H * 0.72)}" width="{W}" height="8" fill="#8FA1AC"/>',
+        # spotlight pools on the floor
+        '<ellipse cx="640" cy="980" rx="420" ry="60" fill="#DDE5EA" opacity="0.7"/>',
+        '<ellipse cx="1400" cy="1000" rx="380" ry="54" fill="#DDE5EA" opacity="0.7"/>',
+    ]
+    body = "".join(body)
+    checks = [(960, 300, "#FFFFFF", 10), (30, 30, "#CAD4DB", 10), (60, 1000, "#B7C4CC", 14)]
     return svg_wrap(body, defs), checks
 
 

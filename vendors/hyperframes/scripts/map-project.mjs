@@ -32,6 +32,18 @@ function die(msg) {
   process.exit(1);
 }
 
+function probeSeconds(file) {
+  try {
+    const out = execSync(
+      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '${file}'`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    return Number(out.trim());
+  } catch {
+    return 1.5;
+  }
+}
+
 const mergedPath = path.join(projectDir, ".merged.yaml");
 const projectPath = fs.existsSync(mergedPath) ? mergedPath : path.join(projectDir, "project.yaml");
 if (!fs.existsSync(projectPath)) die(`missing ${projectPath}`);
@@ -60,7 +72,7 @@ if (settings.background !== undefined && typeof settings.background !== "string"
   die("settings.background must be a theme name string");
 }
 for (const line of script) {
-  if (line.se) die(`script id ${line.id}: sound effects are not supported by the hyperframes vendor yet`);
+
 }
 
 // ---- voices: platform manifest or estimates (never mixed) ----
@@ -245,10 +257,25 @@ for (const seg of timeline) {
   const text = line.display_text || line.text;
   idSeq += 1;
   clips.push(`    <audio class="clip" id="line-${line.id}-audio" src="voices/${seg.file}" data-start="${seg.start.toFixed(3)}" data-duration="${seg.dur.toFixed(3)}" data-track-index="20"></audio>`);
+  if (line.se) {
+    const seAbs = path.join(projectDir, line.se.src);
+    const seWork = path.join(workDir, line.se.src);
+    fs.mkdirSync(path.dirname(seWork), { recursive: true });
+    fs.copyFileSync(seAbs, seWork);
+    const seDur = probeSeconds(seWork);
+    idSeq += 1;
+    clips.push(`    <audio class="clip" id="line-${line.id}-se" src="${line.se.src}" data-start="${seg.start.toFixed(3)}" data-duration="${Math.min(seDur, seg.dur + (line.pause_after ?? 0.5)).toFixed(3)}" data-volume="${(line.se.volume ?? 1).toFixed(2)}" data-track-index="21"></audio>`);
+  }
   const subStyle = `position:absolute;bottom:${Math.round(subBottomFinal)}px;left:50%;transform:translateX(-50%);width:${subWidthPct}%;text-align:center;font-family:'${fontFamily}',sans-serif;font-size:${fontSize}px;font-weight:${fontWeight};color:${font.color || "#ffffff"};-webkit-text-stroke:${Math.round(fontSize * 0.2)}px ${font.outline_color || "#1F2937"};paint-order:stroke fill;overflow-wrap:anywhere;text-wrap:balance;line-height:1.4`;
   clips.push(clip(`<div style="${subStyle}">${esc(text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 30, z: 30 }));
   const v = line.visual;
-  if (v && v.type === "text" && v.text) {
+  if (v && v.type === "image" && v.src) {
+    const maxH = v.font_size ? Math.min(v.font_size, H * 0.45) : H * 0.45;
+    clips.push(clip(
+      `<img src="${v.src}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:70%;max-height:${maxH}px;object-fit:contain;border-radius:12px" />`,
+      { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 },
+    ));
+  } else if (v && v.type === "text" && v.text) {
     const vs = v.font_size || 84;
     const cardStyle = `position:absolute;inset:0 0 25% 0;display:flex;align-items:center;justify-content:center;font-family:'${fontFamily}',sans-serif;font-size:${vs}px;font-weight:bold;color:${v.color || "#ffffff"};-webkit-text-stroke:${Math.round(vs * 0.16)}px ${v.outline_color || "#1F2937"};paint-order:stroke fill;text-align:center;white-space:pre-wrap;text-wrap:balance`;
     clips.push(clip(`<div style="${cardStyle}">${esc(v.text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));

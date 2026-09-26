@@ -75,19 +75,37 @@ script:
       command: "uv run tools/wayang.py check projects/video-tutorial"
       output:
         - "FILL: meta.title is empty - name your video"
-        - "READY: 0 blockers"
+        - "FILL: character 'momo' has no voice.engine"
+        - "NOT READY: 2 item(s) to fill above"
   - id: 6
     character: momo
-    text: "Langkah lima: isi tajuk, watak, dan skrip anda."
+    text: "Begini cara mengisinya - buka fail dan tulis begini."
+    scene: 3
+    pause_after: 2.0
+    visual:
+      type: terminal
+      command: "nano projects/video-tutorial/project.yaml"
+      output:
+        - "meta:"
+        - "  title: \"Video Pertama Saya\""
+        - "characters:"
+        - "  momo:"
+        - "    name: Momo"
+        - "    voice:"
+        - "      engine: revolab"
+        - "      voice_id: paan-f695215e"
+  - id: 7
+    character: momo
+    text: "Langkah lima: isi tajuk, watak, dan skrip seperti contoh."
     scene: 3
     pause_after: 1.2
     visual:
       type: text
-      text: "meta:  characters:  script:"
-      font_size: 72
+      text: "Isi Seperti Contoh"
+      font_size: 84
       color: "#ffffff"
       animation: fadeIn
-  - id: 7
+  - id: 8
     character: momo
     text: "Langkah enam: sahkan semua tepat."
     scene: 3
@@ -97,7 +115,7 @@ script:
       command: "uv run tools/wayang.py validate projects/video-tutorial"
       output:
         - "OK"
-  - id: 8
+  - id: 9
     character: momo
     text: "Langkah tujuh: render! Suara, jagaan masa, semua automatik."
     scene: 3
@@ -109,7 +127,7 @@ script:
         - "TTS source: revolab"
         - "duration check: actual=20.736s expected=20.700s"
         - "visibility lint: all checks passed"
-  - id: 9
+  - id: 10
     character: momo
     text: "Siap! Video anda di projects/video-tutorial/out."
     scene: 3

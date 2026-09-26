@@ -85,7 +85,10 @@ placeholder wavs. Never mixed in one project.
   `Character.tsx`/`Subtitle.tsx` no longer hardcode zundamon/metan.
 - `Root.tsx`/`Main.tsx` read resolution, fps and playbackRate from
   `settings.generated.ts` (canonical settings apply) instead of static
-  `config.ts` values.
+  `config.ts` values. Root also applies the per-line playback-rate
+  adjustment when summing total frames (upstream summed raw frames, which
+  left an empty tail at rate > 1) and drops the unused opening buffer
+  since the first line starts at frame 0.
 - `generate-voices.ts` reads speaker ids from characters.yaml and fps/rate
   from video-settings.yaml; wav duration is parsed in node (upstream shelled
   out to python3); unknown characters throw instead of being skipped.

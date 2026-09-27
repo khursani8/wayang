@@ -33,22 +33,9 @@ node "$VENDOR_DIR/scripts/map-project.mjs" "$PROJECT_DIR" "$WORK"
 echo "[hyperframes-vendor] rendering (npx hyperframes, downloads CLI on first run)..."
 (cd "$WORK" && npx --yes hyperframes@latest render --output "$WORK/out.mp4" -f 30)
 
-# Duration regression guard: rendered length must match the computed
-# timeline. Tolerance 0.5s covers container rounding.
-EXPECTED="$(cat "$WORK/expected-seconds.txt" 2>/dev/null || true)"
-if [ -n "$EXPECTED" ]; then
-  if command -v ffprobe >/dev/null 2>&1; then
-    ACTUAL="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$WORK/out.mp4")"
-    echo "[hyperframes-vendor] duration check: actual=${ACTUAL}s expected=${EXPECTED}s"
-    ok="$(awk -v a="$ACTUAL" -v e="$EXPECTED" 'BEGIN { print (a >= e - 0.5 && a <= e + 0.5) ? 1 : 0 }')"
-    if [ "$ok" != "1" ]; then
-      echo "[hyperframes-vendor] ERROR: rendered duration deviates from the computed timeline" >&2
-      exit 1
-    fi
-  else
-    echo "[hyperframes-vendor] WARNING: duration guard skipped, ffprobe not found"
-  fi
-fi
+# The duration guard is platform-owned: OUT_DIR carries expected-seconds.txt;
+# tools/wayang.py compares it against the render after this script exits.
+cp "$WORK/expected-seconds.txt" "$OUT_DIR/expected-seconds.txt"
 
 cp "$WORK/timeline.json" "$OUT_DIR/timeline.json"
 cp "$WORK/out.mp4" "$OUT_DIR/video.mp4"

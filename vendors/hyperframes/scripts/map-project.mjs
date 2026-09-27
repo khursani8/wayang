@@ -98,6 +98,31 @@ if (voiceSeconds === null) {
   console.log("[map-project] TTS source: estimate (no platform voices complete)");
 }
 
+// ---- estimated timing: silent placeholder wavs (TTS source: estimate) ----
+// Every audio element needs a real source; the hyperframes runtime blocks the
+// render on missing sources. The platform lint labels these renders and skips
+// the voice check (manifest absent -> estimate).
+function silentWav(seconds) {
+  const rate = 24000;
+  const samples = Math.max(1, Math.ceil(seconds * rate));
+  const dataSize = samples * 2;
+  const buf = Buffer.alloc(44 + dataSize);
+  buf.write("RIFF", 0);
+  buf.writeUInt32LE(36 + dataSize, 4);
+  buf.write("WAVE", 8);
+  buf.write("fmt ", 12);
+  buf.writeUInt32LE(16, 16);
+  buf.writeUInt16LE(1, 20);
+  buf.writeUInt16LE(1, 22);
+  buf.writeUInt32LE(rate, 24);
+  buf.writeUInt32LE(rate * 2, 28);
+  buf.writeUInt16LE(2, 32);
+  buf.writeUInt16LE(16, 34);
+  buf.write("data", 36);
+  buf.writeUInt32LE(dataSize, 40);
+  return buf;
+}
+
 const pauseOf = (line) => (line.pause_after ?? 0.5);
 
 // ---- timeline ----
@@ -111,6 +136,15 @@ for (const line of script) {
   timeline.push({ line, file, start: t, dur, end: t + dur, subEnd: t + dur + pause / playbackRate });
   t += dur + pause / playbackRate;
 }
+// Write silent placeholder wavs on the estimate path so audio sources exist.
+if (voiceSeconds === null) {
+  const voicesDir = path.join(workDir, "voices");
+  fs.mkdirSync(voicesDir, { recursive: true });
+  for (const seg of timeline) {
+    fs.writeFileSync(path.join(voicesDir, seg.file), silentWav(seg.dur));
+  }
+}
+
 const total = +(t + 2).toFixed(3);
 
 // ---- background: project custom > named theme > engine default (riverbank) ----

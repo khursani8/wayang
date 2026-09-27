@@ -11,7 +11,7 @@ from pathlib import Path
 
 import cairosvg
 
-OUT = Path("/mnt/data/work/content_engine/assets/backgrounds")
+OUT = Path(__file__).resolve().parent.parent / "backgrounds"
 W, H = 1920, 1080
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -31,7 +31,7 @@ def save(name: str, svg: str, checks: list) -> None:
         if os.path.exists(tmp):
             os.unlink(tmp)
         raise
-    from PIL import Image  # noqa: PLC0415
+    from PIL import Image
 
     img = Image.open(path).convert("RGB")
     if img.size != (W, H):

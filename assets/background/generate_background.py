@@ -13,7 +13,7 @@ from pathlib import Path
 
 import cairosvg
 
-OUT = Path("/mnt/data/work/content_engine/vendors/remotion/engine/public/background.png")
+OUT = Path(__file__).resolve().parent.parent.parent / "vendors" / "remotion" / "engine" / "public" / "background.png"
 W, H = 1920, 1080
 BOARD = "#2d5a3d"
 BOARD_DARK = "#275036"
@@ -50,8 +50,10 @@ GRAINS = [
 
 def build_svg() -> str:
     parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
-        f'viewBox="0 0 {W} {H}">',
+        (
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
+            f'viewBox="0 0 {W} {H}">'
+        ),
         # room
         f'<rect width="{W}" height="{H}" fill="{ROOM}"/>',
         # board with dark outline, inset top 40 / sides 60 / bottom 160
@@ -96,7 +98,7 @@ def render(svg_str: str, path: Path) -> None:
 
 
 def check(path: Path) -> None:
-    from PIL import Image  # noqa: PLC0415
+    from PIL import Image
 
     img = Image.open(path).convert("RGB")
     if img.size != (W, H):

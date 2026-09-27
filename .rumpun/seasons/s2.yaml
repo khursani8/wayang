@@ -1,0 +1,43 @@
+# s2 - platform consolidation: guards to the platform, shared loading, bug fixes
+id: s2
+parent: s1
+goal: "Platform consolidation: duration guard + visibility lint become platform-owned (tools/render_checks.py), project loading shared (tools/project.py), and the known bug fixes land (estimate double-rate, check series-merge gap, init-series ms default, theme catalog split, cache-hash effective params)"
+metric: "est-demo, dialog-ms, hf-demo, video-tutorial all render and pass the visibility lint after the refactor; no regressions on cached-voice renders"
+mode: fight
+methodology:
+  approach: "hygiene batch (R1) + duration guard to platform (R3) + lint geometry from settings (R4) + the five known bug fixes; reviews in REPO_ANALYSIS/review-*.md"
+  evidence: []
+  primary_change:
+    type: rewire
+    node: render-guards
+    baseline: "duration guard duplicated per vendor build.sh; lint geometry hard-coded; five known bugs open"
+    expected_band: "all four demo projects render + pass lint with guards enforced platform-side"
+    rollback: "git revert to the 848d28e lineage"
+    eval_window: "the four demo renders + lint runs after the refactor"
+  pipeline:
+    - phase: implement
+      primitive: execute
+      agents: writers
+      prompt: prompts/base/execute.md
+      writes: "tools/ vendors/*/build.sh"
+    - phase: render
+      primitive: execute
+      agents: writers
+      prompt: prompts/base/execute.md
+      reads: "tools/ vendors/*/build.sh"
+      writes: "projects/*/out/video.mp4 projects/*/out/timeline.json"
+    - phase: verify
+      primitive: evaluate
+      agents: writers
+      prompt: prompts/base/evaluate.md
+      reads: "projects/*/out/video.mp4 projects/*/out/timeline.json"
+      writes: "REPO_ANALYSIS/s2-verify.md"
+writers:
+  - name: fable
+    route: fable
+    lane: solo
+    prompt: prompts/base/execute.md
+    knowledge: full
+    budget: {minutes: 240}
+stop:
+  "on": [all_exited]

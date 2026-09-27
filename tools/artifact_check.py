@@ -121,7 +121,7 @@ import tarfile
 import tempfile
 import time
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 
@@ -822,7 +822,7 @@ def build_record(res, packs_note, seals_note):
     header = [
         f"# akar record: check-{res.sid}",
         f"id: check-{res.sid}",
-        f"date: {date.today().isoformat()}",
+        f"date: {datetime.now(tz=timezone.utc).date().isoformat()}",
         f"title: independent artifact check {res.sid} @ {res.commit[:12]} ({res.verdict})",
     ]
     return "\n".join([*header, body_text, f"sha256: {digest}"]) + "\n"
@@ -836,7 +836,7 @@ def write_record(out_dir, sid, text):
     body and its sha256 seal are untouched.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = f"{date.today().isoformat()}_check-{sid}"
+    stem = f"{datetime.now(tz=timezone.utc).date().isoformat()}_check-{sid}"
     final = out_dir / f"{stem}.md"
     rerun = 1
     while final.exists():

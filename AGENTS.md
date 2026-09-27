@@ -1,7 +1,7 @@
 # Wayang — agent manual
 
 Framework-agnostic video generation. Templates named by format
-(dialog, presentation, storytelling, community). Agents drive `tools/wayang.py`;
+(dialog, presentation, storytelling, community, tutorial). Agents drive `tools/wayang.py`;
 humans fill one YAML per video. Malaysian identity: Momo and Kiki mascots,
 Bahasa Malaysia content.
 

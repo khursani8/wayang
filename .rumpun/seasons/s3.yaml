@@ -1,0 +1,37 @@
+# s3 - installable CLI (operator directive 7): wayang <command> anywhere
+id: s3
+parent: s2
+goal: "Package Wayang as an installable CLI: pyproject + [project.scripts] wayang; templates/schema bundled as package data; WAYANG_HOME resolution (env > ~/.wayang > cwd); wayang setup fetches vendors, wayang doctor verifies node/ffmpeg/keys"
+metric: "pipx/uv install from git into a clean env -> 'wayang templates' works in an empty directory; 'wayang doctor' reports missing prerequisites accurately"
+mode: fight
+methodology:
+  approach: "package the s2 module split (wayang/cli.py, project.py, render_checks.py); bundle templates+schema; vendor engines fetched by setup"
+  evidence: []
+  primary_change:
+    type: add
+    node: packaging
+    baseline: "clone + 'uv run tools/wayang.py' required"
+    expected_band: "clean-env install -> 'wayang templates' works; 'wayang doctor' accurate"
+    rollback: "git revert; uninstall the package"
+    eval_window: "clean-env install + templates + doctor run"
+  pipeline:
+    - phase: implement
+      primitive: execute
+      agents: writers
+      prompt: prompts/base/execute.md
+      writes: "pyproject.toml tools/"
+    - phase: verify
+      primitive: evaluate
+      agents: writers
+      prompt: prompts/base/evaluate.md
+      reads: "pyproject.toml tools/"
+      writes: "REPO_ANALYSIS/s3-verify.md"
+writers:
+  - name: fable
+    route: fable
+    lane: solo
+    prompt: prompts/base/execute.md
+    knowledge: full
+    budget: {minutes: 240}
+stop:
+  "on": [all_exited]

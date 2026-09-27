@@ -20,6 +20,8 @@ budget:
   campaign_cost_cap: 600
 routes:
   glm: 'cat {prompt} | claude -p --dangerously-skip-permissions'
+  fable: 'env -u ANTHROPIC_BASE_URL -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY -u ANTHROPIC_DEFAULT_SONNET_MODEL -u ANTHROPIC_DEFAULT_OPUS_MODEL -u ANTHROPIC_DEFAULT_HAIKU_MODEL -u ANTHROPIC_DEFAULT_FABLE_MODEL sh -c ''cat {prompt} | claude -p --dangerously-skip-permissions --model claude-fable-5-1'''
+
   claude: 'env -u ANTHROPIC_BASE_URL -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY -u ANTHROPIC_DEFAULT_SONNET_MODEL -u ANTHROPIC_DEFAULT_OPUS_MODEL -u ANTHROPIC_DEFAULT_HAIKU_MODEL -u ANTHROPIC_DEFAULT_FABLE_MODEL sh -c ''cat {prompt} | claude -p --dangerously-skip-permissions --model claude-fable-5-1'''
   gpt-6-astra: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-astra {prompt}'
   gpt-6-sol: 'codex exec --dangerously-bypass-approvals-and-sandbox -m gpt-6-sol {prompt}'

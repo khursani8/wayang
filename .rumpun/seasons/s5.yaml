@@ -1,0 +1,43 @@
+# s5 - creator features batch 2 (the M-effort set)
+id: s5
+parent: s4
+goal: "Ship portrait/square layout presets, per-scene background themes, background music bed with voice-duck safety, bilingual subtitles, shared se catalog, draft render mode, review contact sheet"
+metric: "one demo project per feature with a passing render and lint; canonical schema carries every new key with if/then branches; both vendors honor all new keys"
+mode: fight
+methodology:
+  approach: "schema first, then both mappers, then lint baselines; scene backgrounds activate the parsed-but-unused scene key"
+  evidence: []
+  primary_change:
+    type: add
+    node: layout-and-audio
+    baseline: "landscape-only, no music, single-language subtitles, per-project se files"
+    expected_band: "every listed feature demonstrated with passing renders"
+    rollback: "git revert to the s4 head"
+    eval_window: "feature demos + the full demo sweep"
+  pipeline:
+    - phase: implement
+      primitive: execute
+      agents: writers
+      prompt: prompts/base/execute.md
+      writes: "schema/ tools/ vendors/ templates/"
+    - phase: render
+      primitive: execute
+      agents: writers
+      prompt: prompts/base/execute.md
+      reads: "schema/ tools/ vendors/ templates/"
+      writes: "projects/video-tutorial/out/video.mp4 projects/video-tutorial/out/timeline.json"
+    - phase: verify
+      primitive: evaluate
+      agents: writers
+      prompt: prompts/base/evaluate.md
+      reads: "projects/video-tutorial/out/video.mp4 projects/video-tutorial/out/timeline.json"
+      writes: "REPO_ANALYSIS/s5-verify.md"
+writers:
+  - name: fable
+    route: fable
+    lane: solo
+    prompt: prompts/base/execute.md
+    knowledge: full
+    budget: {minutes: 240}
+stop:
+  "on": [all_exited]

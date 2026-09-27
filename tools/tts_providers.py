@@ -38,7 +38,14 @@ class OpenAIProvider:
         return False, "OPENAI_API_KEY is not set"
 
     def config_hash(self, cfg: dict) -> dict:
-        return {k: cfg.get(k) for k in ("voice", "model", "speed", "instructions")}
+        # Effective params: provider-applied defaults are baked in so a changed
+        # default invalidates cached voices (cache-hash effective params bug).
+        return {
+            "voice": cfg.get("voice"),
+            "model": cfg.get("model") or "gpt-4o-mini-tts",
+            "speed": cfg.get("speed"),
+            "instructions": cfg.get("instructions"),
+        }
 
     def synthesize(self, text: str, cfg: dict, out_path) -> None:
         payload = {
@@ -80,7 +87,13 @@ class RevolabProvider:
         return False, "REVOLAB_API_KEY is not set"
 
     def config_hash(self, cfg: dict) -> dict:
-        return {k: cfg.get(k) for k in ("voice_id", "model", "speed")}
+        # Effective params: the nada-1.0-pro default is baked in so a changed
+        # default invalidates cached voices (cache-hash effective params bug).
+        return {
+            "voice_id": cfg.get("voice_id"),
+            "model": cfg.get("model") or "nada-1.0-pro",
+            "speed": cfg.get("speed"),
+        }
 
     def synthesize(self, text: str, cfg: dict, out_path) -> None:
         payload = {

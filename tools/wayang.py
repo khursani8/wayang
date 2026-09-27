@@ -13,26 +13,8 @@ from pathlib import Path
 
 import yaml
 from jsonschema import Draft202012Validator
+from project import deep_merge, find_series_file, load_lenient
 from tts_providers import PROVIDERS, ProviderError, line_hash, wav_seconds
-
-
-def deep_merge(base: dict, overlay: dict) -> dict:
-    """Overlay wins per key; dicts recurse; lists and scalars replace."""
-    out = dict(base)
-    for key, value in overlay.items():
-        if isinstance(value, dict) and isinstance(out.get(key), dict):
-            out[key] = deep_merge(out[key], value)
-        else:
-            out[key] = value
-    return out
-
-
-def find_series_file(pdir: Path):
-    """Nearest series.yaml above an episode dir (up to two levels)."""
-    for cand in (pdir.parent / "series.yaml", pdir.parent.parent / "series.yaml"):
-        if cand.is_file():
-            return cand
-    return None
 
 
 def is_series_dir(pdir: Path) -> bool:
@@ -106,7 +88,7 @@ def cmd_init_series(args):
             "title": template["meta"]["title"],
             "template": args.template,
             "vendor": template["meta"]["vendor"],
-            "language": template["meta"].get("language", "ja"),
+            "language": template["meta"].get("language", "ms"),
             "description": f"shared base for the {args.name} series; episodes inherit and override",
         },
         "characters": template.get("characters", {}),
@@ -143,6 +125,8 @@ def load_project(pdir: Path) -> dict:
     if not isinstance(data, dict):
         fail("project.yaml must be a mapping")
     series_file = find_series_file(pdir)
+    if series_file is None and (pdir / "series.yaml").is_file():
+        series_file = pdir / "series.yaml"
     if series_file is not None:
         try:
             series = yaml.safe_load(series_file.read_text(encoding="utf-8"))
@@ -220,10 +204,20 @@ def run_tts(pdir: Path, data: dict, force: bool = False) -> None:
     for line in lines:
         cfg = chars[line["character"]]["voice"]
         fname = f"{line['id']:02d}_{line['character']}.wav"
-        digest = line_hash(line["text"], cfg["engine"], PROVIDERS[cfg["engine"]].config_hash(cfg))
+        provider = PROVIDERS[cfg["engine"]]
+        digest = line_hash(line["text"], cfg["engine"], provider.config_hash(cfg))
         cached = manifest["lines"].get(fname)
-        if not force and cached and cached.get("hash") == digest and (voices_dir / fname).is_file():
-            continue
+        if not force and cached and (voices_dir / fname).is_file():
+            if cached.get("hash") == digest:
+                continue
+            # One-time migration: caches hashed before effective params used
+            # raw cfg (model=None). The same defaults were applied at
+            # synthesis, so a legacy-hash hit upgrades without re-synthesis.
+            legacy = line_hash(line["text"], cfg["engine"], {k: cfg.get(k) for k in provider.config_hash(cfg)})
+            if cached.get("hash") == legacy:
+                cached["hash"] = digest
+                log.info("cache-hash upgraded to effective params: %s", fname)
+                continue
         jobs.append((line, cfg, fname, digest))
     if not jobs:
         manifest["engines"] = sorted({v["engine"] for v in manifest["lines"].values()})
@@ -441,16 +435,14 @@ def cmd_check(args):
     """Preflight guidance: what to fill before rendering, in plain words.
     Exit 0 ready, 1 blockers, 2 notes only."""
     pdir = resolve_project(args.project)
-    pf = pdir / "project.yaml"
-    if not pf.is_file():
-        fail(f"{pf} missing")
-    try:
-        data = yaml.safe_load(pf.read_text(encoding="utf-8"))
-    except yaml.YAMLError as e:
-        fail(f"project.yaml parse error: {e}")
-    if not isinstance(data, dict):
-        fail("project.yaml must be a mapping")
+    data, _series_file, pre_issues = load_lenient(pdir)
+    if data is None:
+        for msg in pre_issues:
+            fail(msg)
+        fail("project.yaml could not be loaded")
     issues, notes = [], []
+    for msg in pre_issues:
+        log.warning("FILL: %s", msg)
     for section in ("meta", "characters", "script", "settings"):
         if section not in data:
             issues.append(f"no [{section}] section - copy it from templates/<format>/template.yaml")
@@ -460,7 +452,8 @@ def cmd_check(args):
     vendor = meta.get("vendor", "remotion")
     build = ROOT / "vendors" / vendor / "build.sh"
     if not build.is_file():
-        issues.append(f"vendor '{vendor}' does not exist (known: remotion, hyperframes)")
+        known = sorted(d.name for d in (ROOT / "vendors").iterdir() if (d / "build.sh").is_file())
+        issues.append(f"vendor '{vendor}' does not exist (known: {', '.join(known)})")
     chars = data.get("characters") or {}
     if not chars:
         issues.append("no characters - every script line needs a speaker")
@@ -487,7 +480,7 @@ def cmd_check(args):
             issues.append(f"script line {line.get('id')}: text is empty")
     settings = data.get("settings") or {}
     if settings.get("background") is not None:
-        catalog_dir = ROOT / "vendors" / vendor / "assets" / "backgrounds"
+        catalog_dir = ROOT / "assets" / "backgrounds"
         if catalog_dir.is_dir():
             catalog = sorted(p.stem for p in catalog_dir.glob("*.png"))
             if settings["background"] not in catalog:
@@ -524,6 +517,27 @@ def cmd_lint(args):
     lint_project(pdir, mp4, data)
 
 
+def _duration_guard(out: Path, vendor: str) -> None:
+    """Compare the render against expected-seconds.txt (platform-owned guard).
+
+    Vendors copy expected-seconds.txt to OUT_DIR; the compare runs once here
+    instead of a per-vendor awk copy inside every build.sh. Tolerance 0.5s
+    covers container rounding.
+    """
+    expected_file = out / "expected-seconds.txt"
+    if not expected_file.is_file():
+        log.warning("duration guard skipped: %s missing (vendor '%s')", expected_file, vendor)
+        return
+    expected = float(expected_file.read_text(encoding="utf-8").strip())
+    actual = float(_ffprobe_json(out / "video.mp4")["format"]["duration"])
+    log.info("duration guard: actual=%.2fs expected=%.2fs", actual, expected)
+    if abs(actual - expected) > 0.5:
+        fail(
+            f"duration guard: rendered {actual:.2f}s deviates from expected "
+            f"{expected:.2f}s (empty-tail bug class)"
+        )
+
+
 def render_one(pdir: Path, skip_lint: bool = False) -> None:
     data = validate_project(pdir)
     # The vendor consumes one canonical file. When series inheritance applied,
@@ -544,6 +558,7 @@ def render_one(pdir: Path, skip_lint: bool = False) -> None:
     if proc.returncode != 0:
         fail(f"vendor build.sh exited {proc.returncode}")
     log.info("done: %s", out / "video.mp4")
+    _duration_guard(out, vendor)
     if not skip_lint:
         lint_project(pdir, out / "video.mp4", data)
 

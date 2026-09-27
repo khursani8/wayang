@@ -239,8 +239,10 @@ if (platformEngines === null) {
   console.log("[map-project] TTS source: estimate (durations.json + silent placeholder wavs written)");
   for (const line of engineScript) {
     const visible = String(line.text).replace(/\s+/g, "").length;
-    const seconds = visible / (cps * playbackRate);
-    const frames = Math.max(24, Math.ceil(seconds * fps));
+    const seconds = visible / cps;
+    // Raw frames carry the playbackRate (Root.tsx plays ceil(frames/rate)),
+    // matching the platform-voice path above.
+    const frames = Math.max(24, Math.ceil(seconds * fps * playbackRate));
     const f = `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
     durations[f] = frames;
     fs.writeFileSync(path.join(workVoices, f), silentWav(frames / fps));

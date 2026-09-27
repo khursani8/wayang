@@ -110,6 +110,7 @@ for (const line of script) {
   if (line.scene) mapped.scene = line.scene;
   if (line.pause_after !== undefined) mapped.pauseAfter = Math.round(line.pause_after * fps);
   if (line.emotion) mapped.emotion = line.emotion;
+  if (line.translations) mapped.translations = line.translations;
   if (line.visual && line.visual.type === "terminal") {
     // Terminal steps degrade to a command text card here; the simulated
     // terminal is a hyperframes feature.

@@ -483,8 +483,13 @@ def cmd_captions(args):
     data, _sf, _pre = load_lenient(pdir)
     if data is None:
         fail("project could not be loaded")
+    secondary_language = (data.get("settings") or {}).get("subtitles", {}).get("secondary_language")
     windows, _from_vendor = _line_windows(data, pdir)
     text_by_id = {int(l["id"]): (l.get("display_text") or l.get("text", "")) for l in data.get("script", [])}
+    secondary_by_id = {
+        int(l["id"]): ((l.get("translations") or {}).get(secondary_language))
+        for l in data.get("script", [])
+    } if secondary_language else {}
     srt_lines, vtt_lines = [], []
     n = 0
     for line, start, end in windows:
@@ -493,8 +498,12 @@ def cmd_captions(args):
             continue
         n += 1
         pair = f"{_stamp(start, ',')} --> {_stamp(end, ',')}"
-        srt_lines.append(f"{n}\n{pair}\n{text_by_id[lid]}\n")
-        vtt_lines.append(f"{pair}\n{text_by_id[lid]}\n\n")
+        cue_text = text_by_id[lid]
+        sec = secondary_by_id.get(lid)
+        if sec:
+            cue_text = cue_text + "\n" + sec
+        srt_lines.append(f"{n}\n{pair}\n{cue_text}\n")
+        vtt_lines.append(f"{pair}\n{cue_text}\n\n")
     out_dir = pdir / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "captions.srt").write_text("\n".join(srt_lines), encoding="utf-8")

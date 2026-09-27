@@ -289,9 +289,13 @@ function useImagesCheck(settings) {
   return settings.character?.use_images ?? false;
 }
 
+const secondaryLang = settings.subtitles?.secondary_language;
 for (const seg of timeline) {
   const line = seg.line;
   const text = line.display_text || line.text;
+  const secondaryText = secondaryLang
+    ? (line.translations || {})[secondaryLang]
+    : undefined;
   idSeq += 1;
   clips.push(`    <audio class="clip" id="line-${line.id}-audio" src="voices/${seg.file}" data-start="${seg.start.toFixed(3)}" data-duration="${seg.dur.toFixed(3)}" data-playback-rate="${playbackRate}" data-track-index="20"></audio>`);
   if (line.se) {
@@ -304,7 +308,11 @@ for (const seg of timeline) {
     clips.push(`    <audio class="clip" id="line-${line.id}-se" src="${line.se.src}" data-start="${seg.start.toFixed(3)}" data-duration="${Math.min(seDur, seg.dur + (line.pause_after ?? 0.5)).toFixed(3)}" data-volume="${(line.se.volume ?? 1).toFixed(2)}" data-track-index="21"></audio>`);
   }
   const subStyle = `position:absolute;bottom:${Math.round(subBottomFinal)}px;left:50%;transform:translateX(-50%);width:${subWidthPct}%;text-align:center;font-family:'${fontFamily}',sans-serif;font-size:${fontSize}px;font-weight:${fontWeight};color:${font.color || "#ffffff"};-webkit-text-stroke:${Math.round(fontSize * 0.2)}px ${font.outline_color || "#1F2937"};paint-order:stroke fill;overflow-wrap:anywhere;text-wrap:balance;line-height:1.4`;
-  clips.push(clip(`<div style="${subStyle}">${esc(text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 30, z: 30 }));
+  let subInner = `<div style="${subStyle}">${esc(text)}</div>`;
+  if (secondaryText) {
+    subInner += `<div style="margin-top:${Math.round(subH / 3)}px;font-size:${Math.round(fontSize * 0.55)}px;font-weight:600;opacity:0.92">${esc(secondaryText)}</div>`;
+  }
+  clips.push(clip(`<div>${subInner}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 30, z: 30 }));
   const v = line.visual;
   if (v && v.type === "terminal") {
     if (!v.command) die(`script id ${line.id}: terminal visual needs a command`);

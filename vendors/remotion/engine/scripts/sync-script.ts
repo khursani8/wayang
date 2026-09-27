@@ -157,6 +157,7 @@ export interface ScriptLine {
   durationInFrames: number;
   pauseAfter: number;
   emotion?: "normal" | "happy" | "surprised" | "thinking" | "sad";
+  translations?: Record<string, string>;
   visual?: VisualContent;
   se?: SoundEffect;
 }

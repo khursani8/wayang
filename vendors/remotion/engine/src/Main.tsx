@@ -142,6 +142,11 @@ export const Main: React.FC = () => {
           <Subtitle
             text={currentLine.displayText ?? currentLine.text}
             character={currentLine.character}
+            secondaryText={
+              SETTINGS.subtitles?.secondaryLanguage
+                ? currentLine.translations?.[SETTINGS.subtitles.secondaryLanguage]
+                : undefined
+            }
           />
         </Sequence>
       )}

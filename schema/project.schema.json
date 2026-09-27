@@ -171,6 +171,18 @@
         },
         "background": {
           "type": "string"
+        },
+        "subtitles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "secondary_language": {
+              "type": "string"
+            },
+            "secondary_size": {
+              "type": "number"
+            }
+          }
         }
       }
     },
@@ -433,6 +445,12 @@
               "minimum": 0,
               "maximum": 1
             }
+          }
+        },
+        "translations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         }
       }

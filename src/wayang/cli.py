@@ -76,6 +76,12 @@ def cmd_init(args):
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(src, dst)
     (dst / "template.yaml").rename(dst / "project.yaml")
+    if args.preset != "landscape":
+        w, h = PRESETS.get(args.preset, (1920, 1080))
+        pf = dst / "project.yaml"
+        text = pf.read_text(encoding="utf-8")
+        text = text.replace("width: 1920", f"width: {w}", 1).replace("height: 1080", f"height: {h}", 1)
+        pf.write_text(text, encoding="utf-8")
     log.info(
         "created projects/%s - edit project.yaml, then: wayang validate projects/%s",
         name,
@@ -492,6 +498,47 @@ def cmd_tts(args):
         run_tts(ep, validate_project(ep), force=args.force, only_line=args.line)
 
 
+PRESETS = {
+    "landscape": (1920, 1080),
+    "portrait": (1080, 1920),
+    "square": (1080, 1080),
+}
+
+
+def cmd_presets(args):
+    log.info("available geometry presets:")
+    for name, (w, h) in PRESETS.items():
+        log.info("  %-10s %dx%d  (init --preset %s)", name, w, h, name)
+
+
+def cmd_check_templates(args):
+    """Smoke gate: schema-validate every bundled template.yaml."""
+    schema = json.loads(paths.schema_path().read_text(encoding="utf-8"))
+    failures = 0
+    for tdir in sorted(paths.templates_dir().iterdir()):
+        tf = tdir / "template.yaml"
+        if not tf.is_file():
+            continue
+        try:
+            data = yaml.safe_load(tf.read_text(encoding="utf-8"))
+            errors = sorted(
+                Draft202012Validator(schema).iter_errors(data),
+                key=lambda e: list(e.absolute_path),
+            )
+            for e in errors:
+                where = ".".join(str(p) for p in e.absolute_path) or "<root>"
+                log.error("%s: schema: %s: %s", tdir.name, where, e.message)
+            if errors:
+                failures += 1
+                continue
+            log.info("%s: OK", tdir.name)
+        except yaml.YAMLError as e:
+            log.error("%s: parse error: %s", tdir.name, e)
+            failures += 1
+    if failures:
+        fail(f"template smoke gate: {failures} template(s) failed")
+
+
 def cmd_captions(args):
     pdir = resolve_project(args.project)
     language = getattr(args, "language", None)
@@ -762,6 +809,7 @@ def main():
     p.set_defaults(func=cmd_templates)
 
     p = sub.add_parser("init", help="scaffold a project from a template")
+    p.add_argument("--preset", default="landscape", help="landscape | portrait | square")
     p.add_argument("template")
     p.add_argument("name")
     p.set_defaults(func=cmd_init)
@@ -799,6 +847,12 @@ def main():
     p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
     p.add_argument("--language", help="render a translated variant (uses translations + per-language voices)")
     p.set_defaults(func=cmd_render)
+    p = sub.add_parser("presets", help="list geometry presets (used by init --preset)")
+    p.set_defaults(func=cmd_presets)
+
+    p = sub.add_parser("check-templates", help="smoke gate: validate every bundled template")
+    p.set_defaults(func=cmd_check_templates)
+
     p = sub.add_parser("captions", help="export SRT/VTT captions from the render timeline")
     p.add_argument("project")
     p.add_argument("--language", help="export captions for a language variant")

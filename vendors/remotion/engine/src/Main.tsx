@@ -1,4 +1,5 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, Sequence, staticFile, Loop, Img } from "remotion";
+import { useMemo } from "react";
 import { loadFont } from "@remotion/google-fonts/MPLUSRounded1c";
 import { scriptData, scenes, ScriptLine, bgmConfig, CHARACTERS } from "./data/script";
 import { COLORS } from "./config";
@@ -17,6 +18,19 @@ const getAdjustedFrames = (frames: number): number =>
 export const Main: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+
+  // Voice windows (adjusted frames) for the BGM duck.
+  const voiceWindows = useMemo(() => {
+    const rate = SETTINGS.video.playbackRate;
+    let acc = 0;
+    return scriptData.map((line) => {
+      const d = Math.ceil(line.durationInFrames / rate);
+      const p = Math.ceil(line.pauseAfter / rate);
+      const start = acc;
+      acc += d + p;
+      return { start, end: start + d };
+    });
+  }, []);
 
   // Current line
   let accumulatedFrames = 0;
@@ -79,11 +93,15 @@ export const Main: React.FC = () => {
           objectFit: "cover",
         }}
       />
-      {/* BGM (canonical settings.bgm) */}
+      {/* BGM (canonical settings.bgm, ducked under voice lines) */}
       {SETTINGS.bgm && SETTINGS.bgm.src && (
         <Audio
           src={staticFile(`bgm/${SETTINGS.bgm.src}`)}
-          volume={SETTINGS.bgm.volume ?? 0.3}
+          volume={(f) => {
+            const base = SETTINGS.bgm.volume ?? 0.3;
+            const speaking = voiceWindows.some((w) => f >= w.start && f < w.end);
+            return speaking ? base * 0.25 : base;
+          }}
           loop={SETTINGS.bgm.loop ?? false}
         />
       )}

@@ -1,0 +1,14 @@
+# What the remotion vendor renders from the canonical schema.
+# check reads this to warn when a project uses keys this vendor degrades.
+engine: remotion
+supported:
+  visual_types: [text, image]
+  emotions: true          # needs <emotion>_open/close.png art
+  se: true
+  bgm: true               # static volume; ducking on hyperframes only
+  scene_backgrounds: false
+  translations: true
+  language_variants: true
+degraded:
+  terminal: rendered as a command text card
+  scene: parsed, no visual effect

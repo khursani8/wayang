@@ -295,14 +295,19 @@ def cmd_check(args):
             ok, why = PROVIDERS[engine].available()
             if not ok:
                 notes.append(f"character '{cid}' speaks via {engine}: {why} - renders stay silent with estimated timing until you set the key")
+            if not (v.get("voice_id") or v.get("voice")):
+                notes.append(f"character '{cid}' has no voice picked - browse: wayang voices --engine {engine}")
     lines = data.get("script") or []
     if not lines:
         issues.append("script is empty - write at least one line")
     for line in lines:
         if line.get("character") not in chars:
             issues.append(f"script line {line.get('id')}: speaker '{line.get('character')}' is not defined in characters")
-        if not str(line.get("text", "")).strip():
-            issues.append(f"script line {line.get('id')}: text is empty")
+        if line.get("emotion") and (data.get("settings") or {}).get("character", {}).get("use_images"):
+            cid = line["character"]
+            emo = line["emotion"]
+            if not (pdir / "assets" / "images" / cid / f"{emo}_close.png").is_file():
+                notes.append(f"line {line.get('id')}: emotion '{emo}' has no art for '{cid}' - the base frames will show")
     settings = data.get("settings") or {}
     if settings.get("background") is not None:
         catalog_dir = paths.backgrounds_dir()
@@ -485,12 +490,19 @@ def cmd_tts(args):
 
 def cmd_captions(args):
     pdir = resolve_project(args.project)
+    language = getattr(args, "language", None)
     data, _sf, _pre = load_lenient(pdir)
     if data is None:
         fail("project could not be loaded")
     secondary_language = (data.get("settings") or {}).get("subtitles", {}).get("secondary_language")
+    if language:
+        secondary_language = None
     windows, _from_vendor = _line_windows(data, pdir)
     text_by_id = {int(l["id"]): (l.get("display_text") or l.get("text", "")) for l in data.get("script", [])}
+    if language:
+        missing = [l["id"] for l in data.get("script", []) if not (l.get("translations") or {}).get(language)]
+        if missing:
+            fail(f"language '{language}': lines missing translations: {missing}")
     secondary_by_id = {
         int(l["id"]): ((l.get("translations") or {}).get(secondary_language))
         for l in data.get("script", [])
@@ -511,9 +523,14 @@ def cmd_captions(args):
         vtt_lines.append(f"{pair}\n{cue_text}\n\n")
     out_dir = pdir / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "captions.srt").write_text("\n".join(srt_lines), encoding="utf-8")
-    (out_dir / "captions.vtt").write_text("WEBVTT\n\n" + "\n".join(vtt_lines), encoding="utf-8")
-    log.info("captions written: %s and %s (%d cues)", out_dir / "captions.srt", out_dir / "captions.vtt", n)
+    suffix = f".{language}" if language else ""
+    (out_dir / f"captions{suffix}.srt").write_text("\n".join(srt_lines), encoding="utf-8")
+    (out_dir / f"captions{suffix}.vtt").write_text("WEBVTT\n\n" + "\n".join(vtt_lines), encoding="utf-8")
+    log.info(
+        "captions written: %s and %s (%d cues)%s",
+        out_dir / f"captions{suffix}.srt", out_dir / f"captions{suffix}.vtt", n,
+        " - rename to <video>.<lang>.srt for YouTube" if language else "",
+    )
 
 
 def cmd_voices(args):
@@ -751,12 +768,12 @@ def main():
     p.add_argument("--first-episode", default="ep01")
     p.set_defaults(func=cmd_init_series)
 
-    p = sub.add_parser("check", help="preflight: what to fill before rendering")
+    p = sub.add_parser("check", help="friendly preflight: what to fill before rendering (guidance)")
     p.add_argument("project")
     p.add_argument("--json", action="store_true", help="machine-readable report")
     p.set_defaults(func=cmd_check)
 
-    p = sub.add_parser("validate", help="validate a project")
+    p = sub.add_parser("validate", help="strict gate: schema + references (blocks a bad render)")
     p.add_argument("project")
     p.set_defaults(func=cmd_validate)
 
@@ -780,6 +797,7 @@ def main():
     p.set_defaults(func=cmd_render)
     p = sub.add_parser("captions", help="export SRT/VTT captions from the render timeline")
     p.add_argument("project")
+    p.add_argument("--language", help="export captions for a language variant")
     p.set_defaults(func=cmd_captions)
 
     p = sub.add_parser("voices", help="browse voice ids for a TTS engine")

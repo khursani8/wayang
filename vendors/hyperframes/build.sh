@@ -30,8 +30,13 @@ if [ -d "$PROJECT_DIR/assets" ]; then cp -R "$PROJECT_DIR/assets" "$WORK/assets"
 npm install --prefix "$VENDOR_DIR/scripts" --silent
 node "$VENDOR_DIR/scripts/map-project.mjs" "$PROJECT_DIR" "$WORK"
 
+DRAFT_FLAGS=""
+if [ "${WAYANG_DRAFT:-0}" = "1" ]; then
+  DRAFT_FLAGS="-q draft"
+  echo "[hyperframes-vendor] draft mode: -q draft"
+fi
 echo "[hyperframes-vendor] rendering (npx hyperframes, downloads CLI on first run)..."
-(cd "$WORK" && npx --yes hyperframes@latest render --output "$WORK/out.mp4" -f 30)
+(cd "$WORK" && npx --yes hyperframes@latest render --output "$WORK/out.mp4" -f 30 $DRAFT_FLAGS)
 
 # The duration guard is platform-owned: OUT_DIR carries expected-seconds.txt;
 # tools/wayang.py compares it against the render after this script exits.

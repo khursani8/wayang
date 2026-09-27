@@ -123,6 +123,9 @@ function silentWav(seconds) {
   return buf;
 }
 
+const TONES = { cinematic: 1.5, playful: 0.85, calm: 1.25, energetic: 0.8 };
+const toneFactor = TONES[settings.tone] ?? 1;
+const targetDuration = settings.duration;
 const pauseOf = (line) => (line.pause_after ?? 0.5);
 const openingDur = settings.title_card ? 3 : 0;
 
@@ -134,7 +137,7 @@ for (const line of script) {
   const raw = voiceSeconds ? voiceSeconds[file] : Math.max(0.8, String(line.text).replace(/\s+/g, "").length / cps);
   const dur = raw / playbackRate;
   const pause = pauseOf(line);
-  timeline.push({ line, file, start: t, dur, end: t + dur, subEnd: t + dur + pause / playbackRate });
+  timeline.push({ line, file, start: t, dur, end: t + dur, pause, subEnd: t + dur + pause / playbackRate });
   t += dur + pause / playbackRate;
 }
 // Write silent placeholder wavs on the estimate path so audio sources exist.
@@ -147,7 +150,23 @@ if (voiceSeconds === null) {
 }
 
 const closingDur = settings.closing_card ? 2.5 : 0;
-const total = +(t + closingDur + 1).toFixed(3);
+// target duration: rescale the pause budget so the total lands on it
+const voiceWall = timeline.reduce((s, seg) => s + seg.dur, 0);
+const pauseWall = timeline.reduce((s, seg) => s + (seg.pause ?? 0) / playbackRate, 0);
+const tail = 1 + (settings.title_card ? 3 : 0) + (settings.closing_card ? 2.5 : 0);
+let pauseScale = 1;
+if (targetDuration && pauseWall > 0) {
+  pauseScale = Math.min(2.5, Math.max(0.3, (targetDuration - tail - voiceWall) / pauseWall));
+}
+let cursor = (settings.title_card ? 3 : 0);
+for (const seg of timeline) {
+  seg.start = cursor;
+  seg.dur = seg.dur;
+  seg.end = cursor + seg.dur + seg.pause / playbackRate * pauseScale;
+  seg.subEnd = seg.end;
+  cursor = seg.end;
+}
+const total = +(cursor + 1).toFixed(3);
 
 // ---- background: project custom > named theme > engine default (riverbank) ----
 const repoRoot = path.resolve(workDir, "..", "..", "..", "..");

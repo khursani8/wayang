@@ -545,7 +545,7 @@ def cmd_captions(args):
     data, _sf, _pre = load_lenient(pdir)
     if data is None:
         fail("project could not be loaded")
-    secondary_language = (data.get("settings") or {}).get("subtitles", {}).get("secondary_language")
+    secondary_language = (data.get("settings") or {}).get("subtitle", {}).get("secondary_language")
     if language:
         secondary_language = None
     windows, _from_vendor = _line_windows(data, pdir)
@@ -761,7 +761,10 @@ def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False, languag
             override = (c.get("voice") or {}).get("languages") or {}
             override = override.get(language) or {}
             c["voice"] = {**c["voice"], **override}
-    run_tts(pdir, data)
+    if draft:
+        log.info("draft: skipping TTS (estimate timing, silent audio)")
+    else:
+        run_tts(pdir, data)
     vendor = data["meta"]["vendor"]
     build = paths.vendor_dir(vendor) / "build.sh"
     if not build.is_file():
@@ -833,13 +836,6 @@ def main():
     p.add_argument("project")
     p.add_argument("--force", action="store_true", help="regenerate even when cached")
     p.set_defaults(func=cmd_tts)
-
-    p.add_argument("project")
-    p.add_argument("project")
-    p.add_argument("--skip-lint", action="store_true", help="skip the post-render visibility lint")
-    p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
-    p.add_argument("--language", help="render a translated variant (uses translations + per-language voices)")
-    p.set_defaults(func=cmd_render)
 
     p = sub.add_parser("render", help="render a project via its vendor engine")
     p.add_argument("project")

@@ -90,6 +90,20 @@
               "type": "number",
               "minimum": 0.5,
               "maximum": 3
+            },
+            "tone": {
+              "type": "string",
+              "enum": [
+                "cinematic",
+                "playful",
+                "calm",
+                "energetic"
+              ]
+            },
+            "duration": {
+              "type": "number",
+              "minimum": 10,
+              "maximum": 600
             }
           }
         },

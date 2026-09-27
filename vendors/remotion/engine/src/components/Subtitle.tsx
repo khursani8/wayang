@@ -121,7 +121,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character, secondaryTe
           {secondaryText && (
             <div
               style={{
-                fontSize: Math.round(font.size * 0.55),
+                fontSize: subtitle.secondarySize ? Math.round(subtitle.secondarySize) : Math.round(font.size * 0.55),
                 fontWeight: 600,
                 opacity: 0.92,
                 marginBottom: Math.round(font.size * 0.15),
@@ -143,7 +143,7 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character, secondaryTe
           {secondaryText && (
             <div
               style={{
-                fontSize: Math.round(font.size * 0.55),
+                fontSize: subtitle.secondarySize ? Math.round(subtitle.secondarySize) : Math.round(font.size * 0.55),
                 fontWeight: 600,
                 opacity: 0.92,
                 marginBottom: Math.round(font.size * 0.15),

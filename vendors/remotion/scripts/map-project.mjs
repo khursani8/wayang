@@ -250,6 +250,30 @@ if (settings.bgm && settings.bgm.src) {
   fs.copyFileSync(bgmSrc, path.join(workDir, "public", "bgm", path.basename(settings.bgm.src)));
 }
 
+// ---- subtitle geometry: raise above character boxes on intersect ----
+const charH = settings.character?.height ?? 275;
+const subBottom = settings.subtitle?.bottom_offset ?? 40;
+const subW = (W * (settings.subtitle?.max_width_percent ?? 55)) / 100;
+const subX0 = Math.round((W - subW) / 2);
+const subX1 = Math.round((W + subW) / 2);
+const subLineH = (settings.font?.size ?? 70) * 1.5;
+const subY0 = Math.round(H - subBottom - subLineH * 2);
+const subY1 = Math.round(H - subBottom);
+let subBottomFinal = subBottom;
+const charBoxes = Object.entries(chars).map(([id, c]) => {
+  const x0 = c.position === "left" ? 40 : W - 40 - charH;
+  return { id, x0, x1: x0 + charH, y0: H - charH, y1: H };
+});
+for (const b of charBoxes) {
+  if (subX0 < b.x1 && subX1 > b.x0 && subY0 < b.y1 && subY1 > b.y0) {
+    subBottomFinal = Math.max(subBottomFinal, charH + 24);
+  }
+}
+if (subBottomFinal !== subBottom) {
+  engineSettings.subtitle.bottomOffset = subBottomFinal;
+  console.log(`[map-project] subtitle raised above characters (bottom ${subBottom} -> ${subBottomFinal})`);
+}
+
 // ---- Priority 2: estimate + silent placeholder wavs ----
 if (platformEngines === null) {
   console.log("[map-project] TTS source: estimate (durations.json + silent placeholder wavs written)");
@@ -279,7 +303,14 @@ const timelineLines = engineScript.map((line) => {
   frameCursor += ad + ap;
   return entry;
 });
-fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({ lines: timelineLines, total: +((frameCursor + 60) / fps).toFixed(3) }));
+fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({
+  lines: timelineLines,
+  total: +((frameCursor + 60) / fps).toFixed(3),
+  layout: {
+    subtitle_band: [subX0, Math.round(H - subBottomFinal - subLineH * 2), subX1, Math.round(H - subBottomFinal)],
+    characters: charBoxes.map((b) => ({ id: b.id, box: [b.x0, b.y0, b.x1, b.y1] })),
+  },
+}));
 
 // Expected composition length (Root.tsx contract): sum of per-line
 // playback-rate-adjusted frames plus the 60-frame closing buffer.

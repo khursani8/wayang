@@ -247,6 +247,14 @@ clips.push(clip(
   `<img src="background.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />`,
   { start: 0, dur: total, track: 0, z: 0 },
 ));
+if (settings.bgm && settings.bgm.src) {
+  const bgmAbs = path.join(projectDir, settings.bgm.src);
+  if (!fs.existsSync(bgmAbs)) die(`settings.bgm.src missing: ${settings.bgm.src}`);
+  fs.copyFileSync(bgmAbs, path.join(workDir, "bgm.mp3"));
+  const bgmVol = settings.bgm.volume ?? 0.3;
+  clips.push(`    <audio class="clip" id="bgm" src="bgm.mp3" data-start="0" data-duration="${total}" data-volume="${bgmVol}" data-track-index="15"></audio>`);
+  console.log(`[map-project] bgm: ${settings.bgm.src} at volume ${bgmVol}`);
+}
 
 const charPos = {};
 for (const id of Object.keys(chars)) {

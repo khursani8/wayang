@@ -55,6 +55,7 @@ for (const k of Object.keys(vendorCfg)) {
 const settingsMap = {
   video: { width: "width", height: "height", fps: "fps", playback_rate: "playbackRate" },
   font: { family: "family", size: "size", weight: "weight", color: "color" },
+  bgm: { src: "src", volume: "volume" },
   subtitle: { bottom_offset: "bottomOffset", max_width_percent: "maxWidthPercent", outline_width: "outlineWidth" },
   character: { height: "height", use_images: "useImages", images_base_path: "imagesBasePath" },
   content: { top_padding: "topPadding", side_padding: "sidePadding", bottom_padding: "bottomPadding" },
@@ -239,6 +240,14 @@ if (fs.existsSync(manifestPath)) {
     platformEngines = manifest.engines && manifest.engines.length ? manifest.engines : ["unknown"];
     console.log(`[map-project] TTS source: ${platformEngines.join("+")} (platform-generated voices)`);
   }
+}
+
+// ---- bgm bed: project file copied into public/bgm ----
+if (settings.bgm && settings.bgm.src) {
+  const bgmSrc = path.join(projectDir, settings.bgm.src);
+  if (!fs.existsSync(bgmSrc)) die(`settings.bgm.src missing: ${settings.bgm.src}`);
+  fs.mkdirSync(path.join(workDir, "public", "bgm"), { recursive: true });
+  fs.copyFileSync(bgmSrc, path.join(workDir, "public", "bgm", path.basename(settings.bgm.src)));
 }
 
 // ---- Priority 2: estimate + silent placeholder wavs ----

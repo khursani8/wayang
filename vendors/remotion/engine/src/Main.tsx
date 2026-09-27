@@ -79,12 +79,12 @@ export const Main: React.FC = () => {
           objectFit: "cover",
         }}
       />
-      {/* BGM */}
-      {bgmConfig && (
+      {/* BGM (canonical settings.bgm) */}
+      {SETTINGS.bgm && SETTINGS.bgm.src && (
         <Audio
-          src={staticFile(`bgm/${bgmConfig.src}`)}
-          volume={bgmConfig.volume ?? 0.3}
-          loop={bgmConfig.loop ?? true}
+          src={staticFile(`bgm/${SETTINGS.bgm.src}`)}
+          volume={SETTINGS.bgm.volume ?? 0.3}
+          loop={SETTINGS.bgm.loop ?? false}
         />
       )}
 

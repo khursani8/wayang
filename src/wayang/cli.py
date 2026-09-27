@@ -751,6 +751,11 @@ def main():
     p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
     p.set_defaults(func=cmd_render)
 
+    p = sub.add_parser("render", help="render a project via its vendor engine")
+    p.add_argument("project")
+    p.add_argument("--skip-lint", action="store_true", help="skip the post-render visibility lint")
+    p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
+    p.set_defaults(func=cmd_render)
     p = sub.add_parser("captions", help="export SRT/VTT captions from the render timeline")
     p.add_argument("project")
     p.set_defaults(func=cmd_captions)

@@ -172,7 +172,16 @@
         "background": {
           "type": "string"
         },
-        "subtitles": {
+        "bgm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["src"],
+      "properties": {
+        "src": { "type": "string" },
+        "volume": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "subtitles": {
           "type": "object",
           "additionalProperties": false,
           "properties": {

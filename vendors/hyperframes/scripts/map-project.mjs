@@ -72,9 +72,6 @@ for (const k of Object.keys(vendorCfg)) {
 if (settings.background !== undefined && typeof settings.background !== "string") {
   die("settings.background must be a theme name string");
 }
-for (const line of script) {
-
-}
 
 // ---- voices: platform manifest or estimates (never mixed) ----
 const manifestPath = path.join(projectDir, "voices", "manifest.json");

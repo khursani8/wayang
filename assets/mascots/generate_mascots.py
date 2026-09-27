@@ -491,6 +491,8 @@ def kiki_eyes_sad() -> str:
         kiki_eyes_base()
         + _brow("M 450 242 Q 396 250 350 270")
         + _brow("M 574 270 Q 628 250 674 242")
+        + '<ellipse cx="404" cy="312" rx="9" ry="13" fill="#7EB8E0"/>'
+        + '<ellipse cx="407" cy="306" rx="3" ry="5" fill="#C9E8F5"/>'
     )
 
 
@@ -534,11 +536,14 @@ def kiki_thinking_close() -> str:
 
 
 def kiki_sad_open() -> str:
+    d = "M 458 494 Q 512 524 566 494 Q 560 542 512 554 Q 464 542 458 494 Z"
     return (
-        kiki_beak_lower()
+        f'<clipPath id="kiki-sad-clip"><path d="{d}"/></clipPath>'
+        f'<path d="{d}" fill="#7A3B44" stroke="{OUTLINE}" stroke-width="10"/>'
+        '<g clip-path="url(#kiki-sad-clip)">'
+        '<ellipse cx="512" cy="548" rx="34" ry="16" fill="#E98A96"/></g>'
+        + kiki_beak_lower(0, 42)
         + kiki_beak_upper()
-        + '<path d="M 462 500 Q 512 478 562 500" fill="none" '
-        f'stroke="{OUTLINE}" stroke-width="10"/>'
     )
 
 
@@ -546,8 +551,8 @@ def kiki_sad_close() -> str:
     return (
         kiki_beak_lower()
         + kiki_beak_upper()
-        + '<path d="M 466 498 Q 512 490 558 498" fill="none" '
-        f'stroke="{OUTLINE}" stroke-width="9"/>'
+        + '<path d="M 462 504 Q 512 484 562 504" fill="none" '
+        f'stroke="{OUTLINE}" stroke-width="11"/>'
     )
 
 

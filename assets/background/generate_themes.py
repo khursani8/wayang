@@ -209,3 +209,67 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# ---- chalkboard (the original board: white room, green board, wooden trim) ----
+CHALK_SMUDGES = [
+    (300, 220, 150, 26, -8, 0.05),
+    (700, 380, 190, 22, 5, 0.04),
+    (1250, 260, 160, 24, -4, 0.05),
+    (1550, 520, 140, 20, 7, 0.04),
+    (480, 620, 180, 26, 6, 0.045),
+    (1050, 700, 200, 24, -6, 0.04),
+    (1500, 780, 150, 20, 4, 0.05),
+    (760, 800, 130, 18, -5, 0.04),
+]
+
+CHALK_GRAINS = [
+    (80, 420, 903, 0.25),
+    (500, 900, 911, 0.2),
+    (980, 1350, 905, 0.25),
+    (1420, 1840, 912, 0.2),
+    (300, 640, 917, 0.18),
+    (1100, 1560, 918, 0.18),
+]
+
+
+def chalkboard_svg() -> str:
+    parts = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">',
+        '<rect width="1920" height="1080" fill="#FFFFFF"/>',
+        '<rect x="54" y="34" width="1812" height="892" rx="12" fill="#1C1C22"/>',
+        '<rect x="60" y="40" width="1800" height="880" rx="8" fill="#2d5a3d"/>',
+        '<clipPath id="board-clip"><rect x="60" y="40" width="1800" height="880" rx="8"/></clipPath>',
+        '<g clip-path="url(#board-clip)">',
+    ]
+    for x, y, rx, ry, rot, op in CHALK_SMUDGES:
+        parts.append(
+            f'<ellipse cx="{x}" cy="{y}" rx="{rx}" ry="{ry}" fill="#FFFFFF" opacity="{op}" '
+            f'transform="rotate({rot} {x} {y})"/>'
+        )
+    parts.append('<rect x="60" y="840" width="1800" height="34" fill="#275036" opacity="0.5"/>')
+    parts.append("</g>")
+    parts.append('<rect x="60" y="896" width="1800" height="24" rx="4" fill="#8B4513"/>')
+    for x1, x2, y, op in CHALK_GRAINS:
+        parts.append(
+            f'<line x1="{x1}" y1="{y}" x2="{x2}" y2="{y}" stroke="#6E3710" '
+            f'stroke-width="3" opacity="{op}" stroke-linecap="round"/>'
+        )
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def save_chalkboard() -> None:
+    path = OUT / "chalkboard.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    png = cairosvg.svg2png(bytestring=chalkboard_svg().encode("utf-8"), output_width=1920, output_height=1080)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".png.tmp")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(png)
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+    logger.info("wrote %s (%d bytes)", path, len(png))

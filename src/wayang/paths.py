@@ -35,7 +35,7 @@ def _pkg_dir(*parts: str) -> Path:
     Zip installs are unsupported by design (npm/npx engines need real files).
     """
     p = Path(str(resources.files("wayang.packages").joinpath(*parts)))
-    if not p.is_dir():
+    if not p.exists():
         raise RuntimeError(f"package data missing: wayang.packages/{'/'.join(parts)} at {p}")
     return p
 

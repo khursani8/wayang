@@ -671,7 +671,7 @@ def cmd_lint(args):
     lint_project(pdir, mp4, data)
 
 
-def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False) -> None:
+def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False, language: str | None = None) -> None:
     data = validate_project(pdir)
     # The vendor consumes one canonical file. When series inheritance applied,
     # materialize the merged doc so the vendor never needs to know about series.
@@ -682,13 +682,28 @@ def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False) -> None
         )
     elif merged_path.exists():
         merged_path.unlink()
+    if language:
+        missing = [line["id"] for line in data["script"]
+                   if not (line.get("translations") or {}).get(language)]
+        if missing:
+            fail(f"language '{language}': lines missing translations: {missing}")
+        for line in data["script"]:
+            line["text"] = line["translations"][language]
+        for c in data["characters"].values():
+            override = (c.get("voice") or {}).get("languages") or {}
+            override = override.get(language) or {}
+            c["voice"] = {**c["voice"], **override}
     run_tts(pdir, data)
     vendor = data["meta"]["vendor"]
     build = paths.vendor_dir(vendor) / "build.sh"
     if not build.is_file():
         fail(f"vendor '{vendor}' has no build.sh (expected {build})" + ("" if paths.REPO_ROOT is not None else " - run: wayang setup"))
     out = pdir / "out"
-    log.info("rendering via vendor '%s'", vendor)
+    if language:
+        (pdir / ".merged.yaml").write_text(
+            yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+        )
+    log.info("rendering via vendor '%s' (language: %s)", vendor, language or "primary")
     draft_env = dict(os.environ)
     if draft:
         draft_env["WAYANG_DRAFT"] = "1"
@@ -697,8 +712,13 @@ def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False) -> None
         fail(f"vendor build.sh exited {proc.returncode}")
     log.info("done: %s", out / "video.mp4")
     duration_guard(out, vendor)
+    final_mp4 = out / "video.mp4"
+    if language:
+        final_mp4 = out / f"video-{language}.mp4"
+        (out / "video.mp4").rename(final_mp4)
+        log.info("language variant: %s", final_mp4)
     if not skip_lint:
-        lint_project(pdir, out / "video.mp4", data)
+        lint_project(pdir, final_mp4, data)
 
 
 def cmd_render(args):
@@ -709,7 +729,7 @@ def cmd_render(args):
             "series: %d episode(s): %s", len(targets), ", ".join(t.name for t in targets)
         )
     for ep in targets:
-        render_one(ep, skip_lint=args.skip_lint, draft=args.draft)
+        render_one(ep, skip_lint=args.skip_lint, draft=args.draft, language=args.language)
 
 
 def main():
@@ -749,12 +769,14 @@ def main():
     p.add_argument("project")
     p.add_argument("--skip-lint", action="store_true", help="skip the post-render visibility lint")
     p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
+    p.add_argument("--language", help="render a translated variant (uses translations + per-language voices)")
     p.set_defaults(func=cmd_render)
 
     p = sub.add_parser("render", help="render a project via its vendor engine")
     p.add_argument("project")
     p.add_argument("--skip-lint", action="store_true", help="skip the post-render visibility lint")
     p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
+    p.add_argument("--language", help="render a translated variant (uses translations + per-language voices)")
     p.set_defaults(func=cmd_render)
     p = sub.add_parser("captions", help="export SRT/VTT captions from the render timeline")
     p.add_argument("project")

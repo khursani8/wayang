@@ -19,6 +19,9 @@ characters:
     voice:
       engine: revolab
       voice_id: paan-f695215e
+      languages:
+        en:
+          voice_id: ahmad-642668a6
 
 script:
   - id: 1

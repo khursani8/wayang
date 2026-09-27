@@ -132,6 +132,12 @@
             "outline_width": {
               "type": "integer",
               "minimum": 0
+            },
+            "secondary_language": {
+              "type": "string"
+            },
+            "secondary_size": {
+              "type": "number"
             }
           }
         },
@@ -171,6 +177,23 @@
         },
         "background": {
           "type": "string"
+        },
+        "bgm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "src"
+          ],
+          "properties": {
+            "src": {
+              "type": "string"
+            },
+            "volume": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
         }
       }
     },
@@ -214,8 +237,38 @@
                 "openai",
                 "revolab"
               ]
+            },
+            "speaker_id": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "voice": {
+              "type": "string"
+            },
+            "voice_id": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0.25,
+              "maximum": 4
+            },
+            "instructions": {
+              "type": "string"
+            },
+            "languages": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
             }
           },
+          "additionalProperties": false,
           "allOf": [
             {
               "if": {
@@ -229,33 +282,9 @@
                 ]
               },
               "then": {
-                "properties": {
-                  "engine": {
-                    "type": "string",
-                    "enum": [
-                      "openai",
-                      "revolab"
-                    ]
-                  },
-                  "voice": {
-                    "type": "string"
-                  },
-                  "model": {
-                    "type": "string"
-                  },
-                  "speed": {
-                    "type": "number",
-                    "minimum": 0.25,
-                    "maximum": 4
-                  },
-                  "instructions": {
-                    "type": "string"
-                  }
-                },
                 "required": [
                   "voice"
-                ],
-                "additionalProperties": false
+                ]
               }
             },
             {
@@ -270,30 +299,9 @@
                 ]
               },
               "then": {
-                "properties": {
-                  "engine": {
-                    "type": "string",
-                    "enum": [
-                      "openai",
-                      "revolab"
-                    ]
-                  },
-                  "voice_id": {
-                    "type": "string"
-                  },
-                  "model": {
-                    "type": "string"
-                  },
-                  "speed": {
-                    "type": "number",
-                    "minimum": 0.25,
-                    "maximum": 4
-                  }
-                },
                 "required": [
                   "voice_id"
-                ],
-                "additionalProperties": false
+                ]
               }
             }
           ]
@@ -433,6 +441,12 @@
               "minimum": 0,
               "maximum": 1
             }
+          }
+        },
+        "translations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         }
       }

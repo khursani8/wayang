@@ -19,11 +19,16 @@ characters:
     voice:
       engine: revolab
       voice_id: paan-f695215e
+      languages:
+        en:
+          voice_id: ahmad-642668a6
 
 script:
   - id: 1
     character: momo
     text: "Hari ini: video pertama anda dalam tujuh langkah!"
+    translations:
+      en: "Today: your first video in seven steps!"
     scene: 1
     pause_after: 0.8
     visual:
@@ -35,6 +40,8 @@ script:
   - id: 2
     character: momo
     text: "Langkah satu: dapatkan repo dan pasang enjin."
+    translations:
+      en: "Step one: get the repo and install the engine."
     scene: 1
     pause_after: 1.4
     visual:
@@ -45,6 +52,8 @@ script:
   - id: 3
     character: momo
     text: "Langkah dua: lihat semua templat yang ada."
+    translations:
+      en: "Step two: see every template available."
     scene: 2
     pause_after: 1.2
     visual:
@@ -58,6 +67,8 @@ script:
   - id: 4
     character: momo
     text: "Langkah tiga: cipta projek video anda."
+    translations:
+      en: "Step three: create your video project."
     scene: 2
     pause_after: 1.2
     visual:
@@ -68,6 +79,8 @@ script:
   - id: 5
     character: momo
     text: "Langkah empat: tanya apa yang perlu diisi."
+    translations:
+      en: "Step four: ask what you still need to fill."
     scene: 3
     pause_after: 1.2
     visual:
@@ -80,6 +93,8 @@ script:
   - id: 6
     character: momo
     text: "Begini cara mengisinya - buka fail dan tulis begini."
+    translations:
+      en: "This is how you fill it - open the file and write this."
     scene: 3
     pause_after: 2.0
     visual:
@@ -97,6 +112,8 @@ script:
   - id: 7
     character: momo
     text: "Langkah lima: isi tajuk, watak, dan skrip seperti contoh."
+    translations:
+      en: "Step five: fill the title, characters, and script like the example."
     scene: 3
     pause_after: 1.2
     visual:
@@ -108,6 +125,8 @@ script:
   - id: 8
     character: momo
     text: "Langkah enam: sahkan semua tepat."
+    translations:
+      en: "Step six: validate everything is correct."
     scene: 3
     pause_after: 1.0
     visual:
@@ -118,6 +137,8 @@ script:
   - id: 9
     character: momo
     text: "Langkah tujuh: render! Suara, jagaan masa, semua automatik."
+    translations:
+      en: "Step seven: render! Voices, timing guards, all automatic."
     scene: 3
     pause_after: 1.4
     visual:
@@ -130,6 +151,8 @@ script:
   - id: 10
     character: momo
     text: "Siap! Video anda di projects/video-tutorial/out."
+    translations:
+      en: "Done! Your video is in projects/video-tutorial/out."
     scene: 3
     pause_after: 1.0
     visual:
@@ -152,6 +175,7 @@ settings:
     weight: "900"
     color: "#ffffff"
   subtitle:
+    secondary_language: en
     bottom_offset: 40
     max_width_percent: 55
     outline_width: 14

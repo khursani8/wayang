@@ -132,3 +132,14 @@
 - An empty for-loop remains in the hyperframes mapper (lines ~75-77).
 - vendors/remotion/AGENTS.md still points at the removed vendor-local
   background catalog; the real one is assets/backgrounds/.
+
+## Packaging trap (found 2026-09-27)
+
+Templates exist in TWO places: the repo `templates/` (source of truth)
+and `src/wayang/packages/templates/` (bundled into the installed wheel).
+The installed CLI reads the PACKAGE copies. Editing repo templates
+without re-syncing means installed users get stale templates.
+Fix policy: after editing templates/, run
+    cp templates/*/template.yaml src/wayang/packages/templates/<t>/template.yaml
+or a build step that syncs. Same caveat will apply to any other
+package-data mirror added later.

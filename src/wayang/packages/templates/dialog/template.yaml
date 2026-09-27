@@ -1,0 +1,102 @@
+# =============================================================
+# dialog template - two-host banter (Momo the tapir + Kiki the hornbill)
+# This file IS a working sample: init copies it as project.yaml
+# and it renders as-is. Edit characters, script, settings.
+# TTS: Revolab voices (set REVOLAB_API_KEY); without a key the render
+# falls back to estimated timing and silent audio, labeled in the log.
+# =============================================================
+meta:
+  title: "Kenalan dengan Momo & Kiki"
+  template: dialog
+  vendor: remotion
+  language: ms
+  description: "dua hos banter: tapir + enggang"
+
+characters:
+  momo:
+    name: Momo
+    color: "#37474F"
+    position: right
+    voice:
+      engine: revolab
+      voice_id: paan-f695215e
+  kiki:
+    name: Kiki
+    color: "#F9A825"
+    position: left
+    voice:
+      engine: revolab
+      voice_id: nur-b184422b
+
+script:
+  - id: 1
+    character: momo
+    text: "Hai semua! Saya Momo, tapir paling ceria!"
+    scene: 1
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Momo & Kiki"
+      font_size: 96
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 2
+    character: kiki
+    text: "Dan saya Kiki, burung enggang yang tak pernah senyap!"
+    scene: 1
+    pause_after: 0.4
+  - id: 3
+    character: momo
+    text: "Kami nak bercerita pasal rakan baharu kita hari ini!"
+    scene: 2
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Rakan Baharu!"
+      font_size: 84
+      color: "#ffffff"
+      animation: slideLeft
+  - id: 4
+    character: kiki
+    text: "Jom kita kenali mereka sama-sama."
+    scene: 2
+    pause_after: 0.4
+  - id: 5
+    character: momo
+    text: "Jangan lupa follow untuk lebih banyak video!"
+    scene: 3
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Follow Kami!"
+      font_size: 88
+      color: "#ffffff"
+      animation: bounce
+  - id: 6
+    character: kiki
+    text: "Jumpa lagi di episod akan datang!"
+    scene: 3
+    pause_after: 1.0
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 70
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: true
+
+vendor:
+  remotion:
+    estimate_cps: 7.5

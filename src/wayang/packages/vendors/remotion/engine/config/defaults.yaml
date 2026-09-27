@@ -1,0 +1,10 @@
+# Default values for new script lines (standalone engine sample).
+newLine:
+  character: momo
+  pauseAfter: 12
+  durationInFrames: 60
+  scene: 1
+  emotion: null
+automation:
+  voiceOnSave: false
+  autoVoiceFileName: true

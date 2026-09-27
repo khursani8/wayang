@@ -1,0 +1,106 @@
+# =============================================================
+# community template - casual announcement (Momo + Kiki)
+# Works as-is after init.
+# TTS: Revolab (set REVOLAB_API_KEY); without a key: estimate fallback.
+# =============================================================
+meta:
+  title: "Meetup Komuniti"
+  template: community
+  vendor: remotion
+  language: ms
+  description: "pengumuman komuniti yang santai"
+
+characters:
+  momo:
+    name: Momo
+    color: "#37474F"
+    position: right
+    voice:
+      engine: revolab
+      voice_id: paan-f695215e
+  kiki:
+    name: Kiki
+    color: "#F9A825"
+    position: left
+    voice:
+      engine: revolab
+      voice_id: nur-b184422b
+
+script:
+  - id: 1
+    character: momo
+    text: "Jom! Komuniti kita ada meetup pada hujung bulan ini!"
+    scene: 1
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Meetup Komuniti"
+      font_size: 96
+      color: "#ffffff"
+      animation: bounce
+  - id: 2
+    character: kiki
+    text: "Sabtu, pukul 8 malam, di talian sepenuhnya."
+    scene: 1
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Sabtu 8 Malam"
+      font_size: 84
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 3
+    character: momo
+    text: "Percuma untuk semua, tak perlu daftar."
+    scene: 2
+    pause_after: 0.4
+  - id: 4
+    character: kiki
+    text: "Bawa soalan anda, kami bawa jawapannya!"
+    scene: 2
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Bawa Soalan"
+      font_size: 88
+      color: "#ffffff"
+      animation: slideLeft
+  - id: 5
+    character: momo
+    text: "Jumpa anda di sana!"
+    scene: 3
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Jumpa Di Sana!"
+      font_size: 88
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 6
+    character: kiki
+    text: "Selamat mencuba dan selamat berkongsi!"
+    scene: 3
+    pause_after: 1.0
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 70
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: true
+
+vendor:
+  remotion:
+    estimate_cps: 7.5

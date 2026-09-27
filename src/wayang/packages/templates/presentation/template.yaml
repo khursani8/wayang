@@ -1,0 +1,99 @@
+# =============================================================
+# presentation template - one presenter + big content cards
+# Works as-is after init. Scenes act as slide sections.
+# TTS: Revolab (set REVOLAB_API_KEY); without a key: estimate fallback.
+# =============================================================
+meta:
+  title: "Tabiat Pagi"
+  template: presentation
+  vendor: remotion
+  language: ms
+  description: "satu peneraju, kad kandungan besar"
+
+characters:
+  momo:
+    name: Momo
+    color: "#37474F"
+    position: right
+    voice:
+      engine: revolab
+      voice_id: paan-f695215e
+
+script:
+  - id: 1
+    character: momo
+    text: "Selamat pagi semua! Hari ini saya nak kongsi tiga tabiat pagi."
+    scene: 1
+    pause_after: 1.2
+    visual:
+      type: text
+      text: "Tabiat Pagi"
+      font_size: 96
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 2
+    character: momo
+    text: "Satu, minum segelas air selepas bangun tidur."
+    scene: 1
+    pause_after: 1.2
+    visual:
+      type: text
+      text: "1. Air"
+      font_size: 84
+      color: "#ffffff"
+      animation: slideLeft
+  - id: 3
+    character: momo
+    text: "Dua, bentang tilam terus. Mudah tapi jarang dibuat."
+    scene: 2
+    pause_after: 1.2
+    visual:
+      type: text
+      text: "2. Bentang tilam"
+      font_size: 84
+      color: "#ffffff"
+      animation: slideUp
+  - id: 4
+    character: momo
+    text: "Tiga, keluar ambil cahaya matahari selama lima minit."
+    scene: 2
+    pause_after: 1.2
+  - id: 5
+    character: momo
+    text: "Kesimpulannya, mula dengan langkah kecil setiap hari."
+    scene: 3
+    pause_after: 1.5
+    visual:
+      type: text
+      text: "Mula Kecil"
+      font_size: 88
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 6
+    character: momo
+    text: "Terima kasih sebab mendengar!"
+    scene: 3
+    pause_after: 1.0
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 70
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: true
+
+vendor:
+  remotion:
+    estimate_cps: 7.5

@@ -1,0 +1,105 @@
+# =============================================================
+# storytelling template - two-host narrative skit with emotions
+# Emotions show once character art exists (shipped in assets/images).
+# TTS: Revolab (set REVOLAB_API_KEY); without a key: estimate fallback.
+# =============================================================
+meta:
+  title: "Harta Karun Kecil"
+  template: storytelling
+  vendor: remotion
+  language: ms
+  description: "lakonan naratif dengan emosi"
+
+characters:
+  momo:
+    name: Momo
+    color: "#37474F"
+    position: right
+    voice:
+      engine: revolab
+      voice_id: paan-f695215e
+  kiki:
+    name: Kiki
+    color: "#F9A825"
+    position: left
+    voice:
+      engine: revolab
+      voice_id: nur-b184422b
+
+script:
+  - id: 1
+    character: momo
+    text: "Wah! Saya jumpa sesuatu yang berkilat di tepi sungai!"
+    scene: 1
+    pause_after: 0.4
+    emotion: surprised
+    visual:
+      type: text
+      text: "Kilauan"
+      font_size: 90
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 2
+    character: kiki
+    text: "Berkilat? Awak pasti ia bukan botol biasa?"
+    scene: 1
+    pause_after: 0.4
+    emotion: thinking
+  - id: 3
+    character: momo
+    text: "Tengok! Ia mengeluarkan cahaya yang hangat!"
+    scene: 2
+    pause_after: 0.6
+    emotion: happy
+    visual:
+      type: text
+      text: "Cahaya Hangat"
+      font_size: 84
+      color: "#ffffff"
+      animation: bounce
+  - id: 4
+    character: kiki
+    text: "Itu... mungkin harta karun yang sebenar."
+    scene: 2
+    pause_after: 0.6
+    emotion: surprised
+  - id: 5
+    character: momo
+    text: "Terima kasih sebab sudi mencari bersama saya."
+    scene: 3
+    pause_after: 0.4
+    visual:
+      type: text
+      text: "Harta Karun Kecil"
+      font_size: 88
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 6
+    character: kiki
+    text: "Sama-sama. Jom cari lagi lain kali!"
+    scene: 3
+    pause_after: 1.0
+    emotion: happy
+
+settings:
+  video:
+    width: 1920
+    height: 1080
+    fps: 30
+    playback_rate: 1.2
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 70
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    bottom_offset: 40
+    max_width_percent: 55
+    outline_width: 14
+  character:
+    height: 275
+    use_images: true
+
+vendor:
+  remotion:
+    estimate_cps: 7.5

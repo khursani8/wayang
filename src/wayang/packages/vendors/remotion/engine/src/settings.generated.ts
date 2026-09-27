@@ -1,0 +1,47 @@
+// This file is generated from video-settings.yaml by sync-settings.ts.
+// Edit video-settings.yaml and re-run npm run sync-settings.
+
+export const SETTINGS = {
+  "font": {
+    "family": "M PLUS Rounded 1c",
+    "size": 70,
+    "weight": "900",
+    "color": "#ffffff",
+    "outlineColor": "character",
+    "innerOutlineColor": "none"
+  },
+  "subtitle": {
+    "bottomOffset": 40,
+    "maxWidthPercent": 55,
+    "maxWidthPixels": 1000,
+    "outlineWidth": 14,
+    "innerOutlineWidth": 8
+  },
+  "character": {
+    "height": 275,
+    "useImages": true,
+    "imagesBasePath": "images"
+  },
+  "content": {
+    "topPadding": 0,
+    "sidePadding": 0,
+    "bottomPadding": 0
+  },
+  "video": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "playbackRate": 1.2
+  },
+  "colors": {
+    "background": "#ffffff",
+    "text": "#ffffff",
+    "accent1": "#37474F",
+    "accent2": "#F9A825"
+  }
+} as const;
+
+// Available art files per character id (scanned from public/images).
+export const AVAILABLE_IMAGES: Record<string, string[]> = {};
+
+export type VideoSettings = typeof SETTINGS;

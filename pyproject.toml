@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wayang"
+version = "0.1.0"
+description = "Wayang: YAML-template video platform, installable as wayang <command>"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pyyaml>=6.0",
+  "jsonschema>=4.20",
+  "pillow>=10.0",
+]
+
+[project.scripts]
+wayang = "wayang.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wayang"]

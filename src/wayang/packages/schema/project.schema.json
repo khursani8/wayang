@@ -1,0 +1,441 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wayang canonical project",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "meta",
+    "characters",
+    "script"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "template",
+        "vendor"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "template": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vendor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "language": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "series": {
+          "type": "string"
+        },
+        "episode": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      }
+    },
+    "characters": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/character"
+      }
+    },
+    "script": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "video": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 320
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 240
+            },
+            "fps": {
+              "type": "integer",
+              "minimum": 12,
+              "maximum": 120
+            },
+            "playback_rate": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 3
+            }
+          }
+        },
+        "font": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "family": {
+              "type": "string"
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 10
+            },
+            "weight": {
+              "type": [
+                "string",
+                "integer"
+              ]
+            },
+            "color": {
+              "type": "string"
+            }
+          }
+        },
+        "subtitle": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "bottom_offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "max_width_percent": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 100
+            },
+            "outline_width": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "character": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "height": {
+              "type": "integer",
+              "minimum": 40
+            },
+            "use_images": {
+              "type": "boolean"
+            },
+            "images_base_path": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "top_padding": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "side_padding": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "bottom_padding": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "background": {
+          "type": "string"
+        }
+      }
+    },
+    "vendor": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "character": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "voice"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "position": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ]
+        },
+        "voice": {
+          "type": "object",
+          "required": [
+            "engine"
+          ],
+          "properties": {
+            "engine": {
+              "type": "string",
+              "enum": [
+                "openai",
+                "revolab"
+              ]
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "engine": {
+                    "const": "openai"
+                  }
+                },
+                "required": [
+                  "engine"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "engine": {
+                    "type": "string",
+                    "enum": [
+                      "openai",
+                      "revolab"
+                    ]
+                  },
+                  "voice": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "speed": {
+                    "type": "number",
+                    "minimum": 0.25,
+                    "maximum": 4
+                  },
+                  "instructions": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "voice"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "engine": {
+                    "const": "revolab"
+                  }
+                },
+                "required": [
+                  "engine"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "engine": {
+                    "type": "string",
+                    "enum": [
+                      "openai",
+                      "revolab"
+                    ]
+                  },
+                  "voice_id": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "speed": {
+                    "type": "number",
+                    "minimum": 0.25,
+                    "maximum": 4
+                  }
+                },
+                "required": [
+                  "voice_id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "image": {
+          "type": "string"
+        },
+        "flip_x": {
+          "type": "boolean"
+        }
+      }
+    },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "character",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "character": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "display_text": {
+          "type": "string"
+        },
+        "scene": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pause_after": {
+          "type": "number",
+          "minimum": 0
+        },
+        "emotion": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "happy",
+            "surprised",
+            "thinking",
+            "sad"
+          ]
+        },
+        "visual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "text",
+                "image",
+                "none",
+                "terminal"
+              ]
+            },
+            "text": {
+              "type": "string"
+            },
+            "src": {
+              "type": "string"
+            },
+            "font_size": {
+              "type": "number"
+            },
+            "color": {
+              "type": "string"
+            },
+            "animation": {
+              "type": "string",
+              "enum": [
+                "none",
+                "fadeIn",
+                "slideUp",
+                "slideLeft",
+                "zoomIn",
+                "bounce"
+              ]
+            },
+            "outline_color": {
+              "type": "string"
+            },
+            "command": {
+              "type": "string"
+            },
+            "output": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "terminal"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "required": [
+                  "command"
+                ]
+              }
+            }
+          ]
+        },
+        "se": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "src"
+          ],
+          "properties": {
+            "src": {
+              "type": "string"
+            },
+            "volume": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

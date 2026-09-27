@@ -1,0 +1,14 @@
+# Character settings for the standalone engine sample.
+# Wayang projects define characters in their own project.yaml.
+momo:
+  name: Momo
+  position: right
+  color: "#37474F"
+  flipX: false
+  defaultPauseAfter: 15
+kiki:
+  name: Kiki
+  position: left
+  color: "#F9A825"
+  flipX: false
+  defaultPauseAfter: 15

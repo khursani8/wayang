@@ -124,9 +124,10 @@ function silentWav(seconds) {
 }
 
 const pauseOf = (line) => (line.pause_after ?? 0.5);
+const openingDur = settings.title_card ? 3 : 0;
 
 // ---- timeline ----
-let t = 0;
+let t = openingDur;
 const timeline = [];
 for (const line of script) {
   const file = `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
@@ -145,7 +146,8 @@ if (voiceSeconds === null) {
   }
 }
 
-const total = +(t + 2).toFixed(3);
+const closingDur = settings.closing_card ? 2.5 : 0;
+const total = +(t + closingDur + 1).toFixed(3);
 
 // ---- background: project custom > named theme > engine default (riverbank) ----
 const repoRoot = path.resolve(workDir, "..", "..", "..", "..");
@@ -243,10 +245,33 @@ const clip = (inner, extraAttrs, style) => {
   return `    <div class="clip" id="clip-${idSeq}" data-start="${extraAttrs.start}" data-duration="${extraAttrs.dur}" data-track-index="${extraAttrs.track}" style="position:absolute;inset:0;z-index:${extraAttrs.z}">\n      ${inner}\n    </div>`;
 };
 
-clips.push(clip(
-  `<img src="background.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />`,
-  { start: 0, dur: total, track: 0, z: 0 },
-));
+// ---- background: one segment per scene run (per-scene themes) ----
+const sceneOf = (line) => line.scene ?? 1;
+const runs = [];
+for (const seg of timeline) {
+  const sc = sceneOf(seg.line);
+  if (runs.length && runs[runs.length - 1].scene === sc) {
+    runs[runs.length - 1].end = seg.subEnd;
+  } else {
+    runs.push({ scene: sc, start: seg.start, end: seg.subEnd });
+  }
+}
+for (let i = 0; i < runs.length; i++) {
+  runs[i].end = i < runs.length - 1 ? runs[i + 1].start : total;
+}
+const usedThemes = new Set();
+for (const run of runs) {
+  const theme = (settings.scenes && settings.scenes[String(run.scene)]) || settings.background || "riverbank";
+  usedThemes.add(theme);
+  const src = `bg-scene${run.scene}.png`;
+  fs.copyFileSync(path.join(repoRoot, "assets", "backgrounds", `${theme}.png`), path.join(workDir, src));
+  clips.push(clip(
+    `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />`,
+    { start: run.start.toFixed(3), dur: (run.end - run.start).toFixed(3), track: 0, z: 0 },
+  ));
+}
+if (usedThemes.size > 1) console.log(`[map-project] scene backgrounds: ${[...usedThemes].join(", ")}`);
+// (per-scene background segments replace the single full-video image)
 if (settings.bgm && settings.bgm.src) {
   const bgmAbs = path.join(projectDir, settings.bgm.src);
   if (!fs.existsSync(bgmAbs)) die(`settings.bgm.src missing: ${settings.bgm.src}`);

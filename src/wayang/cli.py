@@ -210,11 +210,15 @@ def run_tts(pdir: Path, data: dict, force: bool = False, only_line: int | None =
         log.warning("no TTS this run: vendor renders with estimated timing and silent audio")
         return
 
+    pronunciations = (data.get("settings") or {}).get("pronunciations") or {}
     jobs = []
     for line in lines:
         if only_line is not None and line["id"] != only_line:
             continue
         cfg = chars[line["character"]]["voice"]
+        spoken = str(line.get("text", ""))
+        for word, say in pronunciations.items():
+            spoken = spoken.replace(word, say)
         fname = f"{line['id']:02d}_{line['character']}.wav"
         provider = PROVIDERS[cfg["engine"]]
         digest = line_hash(line["text"], cfg["engine"], provider.config_hash(cfg))
@@ -230,7 +234,7 @@ def run_tts(pdir: Path, data: dict, force: bool = False, only_line: int | None =
                 cached["hash"] = digest
                 log.info("cache-hash upgraded to effective params: %s", fname)
                 continue
-        jobs.append((line, cfg, fname, digest))
+        jobs.append((line, cfg, fname, digest, spoken))
     if not jobs:
         manifest["engines"] = sorted({v["engine"] for v in manifest["lines"].values()})
         manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -239,10 +243,10 @@ def run_tts(pdir: Path, data: dict, force: bool = False, only_line: int | None =
 
     log.info("TTS: generating %d line voice(s) with %s", len(jobs), ", ".join(engines))
     voices_dir.mkdir(parents=True, exist_ok=True)
-    for line, cfg, fname, digest in jobs:
+    for line, cfg, fname, digest, spoken in jobs:
         out = voices_dir / fname
         try:
-            PROVIDERS[cfg["engine"]].synthesize(line["text"], cfg, out)
+            PROVIDERS[cfg["engine"]].synthesize(spoken, cfg, out)
         except ProviderError as e:
             log.error("TTS failed for %s: %s", fname, e)
             raise SystemExit(1)

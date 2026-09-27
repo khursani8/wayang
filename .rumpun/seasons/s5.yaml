@@ -1,7 +1,7 @@
 # s5 - creator features batch 2 (the M-effort set)
 id: s5
 parent: s4
-goal: "Ship portrait/square layout presets, per-scene background themes, background music bed with voice-duck safety, bilingual subtitles, shared se catalog, draft render mode, review contact sheet"
+goal: "Ship portrait/square layout presets, per-scene background themes, background music bed with voice-duck safety, bilingual subtitles, shared se catalog, draft render mode, review contact sheet, title and closing cards (both vendors)"
 metric: "one demo project per feature with a passing render and lint; canonical schema carries every new key with if/then branches; both vendors honor all new keys"
 mode: fight
 methodology:

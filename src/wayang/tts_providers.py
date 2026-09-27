@@ -123,3 +123,35 @@ class RevolabProvider:
 
 
 PROVIDERS = {p.name: p for p in (OpenAIProvider(), RevolabProvider())}
+
+
+def provider_voices(engine: str):
+    """Static or fetched voice lists for browsing (wayang voices)."""
+    if engine == "openai":
+        return [
+            {"id": v, "note": "OpenAI preset voice"}
+            for v in ("alloy", "echo", "fable", "onyx", "nova", "shimmer")
+        ], None
+    if engine == "revolab":
+        key = os.environ.get("REVOLAB_API_KEY")
+        if not key:
+            return None, "REVOLAB_API_KEY is not set"
+        req = urllib.request.Request(
+            "https://api.revolab.ai/v1/voices",
+            headers={"Authorization": f"Bearer {key}"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+        except Exception as e:  # noqa: BLE001 - network errors become issues
+            return None, f"revolab voices fetch failed: {e}"
+        out = []
+        for v in data.get("voices", []):
+            out.append({
+                "id": v.get("voice_id"),
+                "language": v.get("language"),
+                "gender": v.get("gender_style"),
+                "note": v.get("display_name"),
+            })
+        return out, None
+    return None, f"no voice catalog for engine '{engine}'"

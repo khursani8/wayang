@@ -24,7 +24,13 @@ from wayang.project import (
     series_episodes,
 )
 from wayang.render_checks import duration_guard, lint_project
-from wayang.tts_providers import PROVIDERS, ProviderError, line_hash, wav_seconds
+from wayang.tts_providers import (
+    PROVIDERS,
+    ProviderError,
+    line_hash,
+    provider_voices,
+    wav_seconds,
+)
 
 log = logging.getLogger("ce")
 
@@ -176,7 +182,7 @@ def validate_project(pdir: Path) -> dict:
     return data
 
 
-def run_tts(pdir: Path, data: dict, force: bool = False) -> None:
+def run_tts(pdir: Path, data: dict, force: bool = False, only_line: int | None = None) -> None:
     """Write one wav per script line into pdir/voices. All-or-nothing per project."""
     lines = data["script"]
     chars = data["characters"]
@@ -201,6 +207,8 @@ def run_tts(pdir: Path, data: dict, force: bool = False) -> None:
 
     jobs = []
     for line in lines:
+        if only_line is not None and line["id"] != only_line:
+            continue
         cfg = chars[line["character"]]["voice"]
         fname = f"{line['id']:02d}_{line['character']}.wav"
         provider = PROVIDERS[cfg["engine"]]
@@ -467,7 +475,137 @@ def cmd_tts(args):
     targets = series_episodes(pdir) if is_series_dir(pdir) else [pdir]
     for ep in targets:
         log.info("tts %s", ep.name)
-        run_tts(ep, validate_project(ep), force=args.force)
+        run_tts(ep, validate_project(ep), force=args.force, only_line=args.line)
+
+
+def cmd_captions(args):
+    pdir = resolve_project(args.project)
+    data, _sf, _pre = load_lenient(pdir)
+    if data is None:
+        fail("project could not be loaded")
+    windows, _from_vendor = _line_windows(data, pdir)
+    text_by_id = {int(l["id"]): (l.get("display_text") or l.get("text", "")) for l in data.get("script", [])}
+    srt_lines, vtt_lines = [], []
+    n = 0
+    for line, start, end in windows:
+        lid = int(line["id"])
+        if lid not in text_by_id:
+            continue
+        n += 1
+        pair = f"{_stamp(start, ',')} --> {_stamp(end, ',')}"
+        srt_lines.append(f"{n}\n{pair}\n{text_by_id[lid]}\n")
+        vtt_lines.append(f"{pair}\n{text_by_id[lid]}\n\n")
+    out_dir = pdir / "out"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "captions.srt").write_text("\n".join(srt_lines), encoding="utf-8")
+    (out_dir / "captions.vtt").write_text("WEBVTT\n\n" + "\n".join(vtt_lines), encoding="utf-8")
+    log.info("captions written: %s and %s (%d cues)", out_dir / "captions.srt", out_dir / "captions.vtt", n)
+
+
+def cmd_voices(args):
+    entries, err = provider_voices(args.engine)
+    if err:
+        fail(err)
+    for e in entries or []:
+        log.info("%s | %s | %s", e.get("id"), e.get("language", "-"), e.get("note", ""))
+
+
+def cmd_stats(args):
+    pdir = resolve_project(args.project)
+    data, _sf, _pre = load_lenient(pdir)
+    if data is None:
+        fail("project could not be loaded")
+    windows, _from_vendor = _line_windows(data, pdir)
+    per_char = {}
+    total = 0.0
+    for line, start, end in windows:
+        per_char[line["character"]] = per_char.get(line["character"], 0.0) + (end - start)
+        total += end - start
+    manifest_file = pdir / "voices" / "manifest.json"
+    voices_cached = 0
+    if manifest_file.is_file():
+        voices_cached = len(json.loads(manifest_file.read_text(encoding="utf-8")).get("lines", {}))
+    report = {
+        "lines": len(windows),
+        "estimated_voice_seconds": round(total, 2),
+        "per_character_seconds": {k: round(v, 2) for k, v in sorted(per_char.items())},
+        "voices_cached": voices_cached,
+        "tts_calls_needed": max(0, len(windows) - voices_cached),
+    }
+    if args.json:
+        print(json.dumps(report, indent=2))
+    else:
+        log.info("stats: %d line(s), ~%.1fs voice time", report["lines"], report["estimated_voice_seconds"])
+        for k, v in report["per_character_seconds"].items():
+            log.info("  %s: %.1fs", k, v)
+        log.info("  voices cached: %d, tts calls needed: %d", voices_cached, report["tts_calls_needed"])
+
+
+def cmd_init_episode(args):
+    sdir = Path.cwd() / "projects" / args.series
+    series_file = sdir / "series.yaml"
+    if not series_file.is_file():
+        fail(f"no series at projects/{args.series} (series.yaml missing)")
+    series = yaml.safe_load(series_file.read_text(encoding="utf-8")) or {}
+    ep_dir = sdir / "episodes" / args.name
+    if ep_dir.exists():
+        fail(f"episode exists: {ep_dir}")
+    ep_dir.mkdir(parents=True)
+    smeta = series.get("meta") or {}
+    episodes_dir = sdir / "episodes"
+    episode_no = len([d for d in episodes_dir.iterdir() if d.is_dir()]) + 1
+    meta = {
+        "title": args.name.replace("-", " ").title(),
+        "template": smeta.get("template", "dialog"),
+        "vendor": smeta.get("vendor", "remotion"),
+        "language": smeta.get("language", "ms"),
+        "series": args.series,
+        "episode": episode_no,
+    }
+    project = {"meta": meta, "characters": {}, "script": []}
+    first_char = next(iter(series.get("characters") or {}), None)
+    if first_char:
+        project["script"] = [{"id": 1, "character": first_char, "text": "TODO: tulis baris pertama anda", "scene": 1}]
+    (ep_dir / "project.yaml").write_text(
+        yaml.safe_dump(project, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+    log.info(
+        "episode created: projects/%s/episodes/%s (watak diwarisi dari series.yaml - edit script, then check)",
+        args.series,
+        args.name,
+    )
+
+def _line_windows(data: dict, pdir):
+    """Per-line (line, start, end). Vendor timeline.json wins over estimates."""
+    tl_path = pdir / "out" / "timeline.json"
+    if tl_path.is_file():
+        tl = json.loads(tl_path.read_text(encoding="utf-8"))
+        by_id = {int(e["id"]): e for e in tl.get("lines", [])}
+        out = []
+        for line in data.get("script", []):
+            entry = by_id.get(int(line["id"]))
+            if entry:
+                out.append((line, float(entry["start"]), float(entry["end"])))
+        if out:
+            return out, True
+    vendor = data["meta"].get("vendor", "remotion")
+    cps = ((data.get("vendor") or {}).get(vendor) or {}).get("estimate_cps", 7.5)
+    rate = data.get("settings", {}).get("video", {}).get("playback_rate", 1.0) if vendor == "remotion" else 1.0
+    t = 0.0
+    out = []
+    for line in data.get("script", []):
+        dur = max(0.8, len(str(line.get("text", "")).replace(" ", "")) / (cps * rate))
+        out.append((line, t, t + dur))
+        t += dur + line.get("pause_after", 0.5)
+    return out, False
+
+
+def _stamp(t: float, sep: str) -> str:
+    cs = max(0, round(t * 1000))
+    h, rem = divmod(cs, 3600000)
+    m, rem = divmod(rem, 60000)
+    s, ms = divmod(rem, 1000)
+    return f"{h:02d}:{m:02d}:{s:02d}{sep}{ms:03d}"
 
 
 def cmd_lint(args):
@@ -555,6 +693,23 @@ def main():
     p.add_argument("--skip-lint", action="store_true", help="skip the post-render visibility lint")
     p.set_defaults(func=cmd_render)
 
+    p = sub.add_parser("captions", help="export SRT/VTT captions from the render timeline")
+    p.add_argument("project")
+    p.set_defaults(func=cmd_captions)
+
+    p = sub.add_parser("voices", help="browse voice ids for a TTS engine")
+    p.add_argument("--engine", default="revolab")
+    p.set_defaults(func=cmd_voices)
+
+    p = sub.add_parser("stats", help="duration and talk-time estimate")
+    p.add_argument("project")
+    p.add_argument("--json", action="store_true", help="machine-readable report")
+    p.set_defaults(func=cmd_stats)
+
+    p = sub.add_parser("init-episode", help="scaffold the next episode of a series")
+    p.add_argument("series")
+    p.add_argument("name")
+    p.set_defaults(func=cmd_init_episode)
     p = sub.add_parser("lint", help="check a rendered video for invisible objects")
     p.add_argument("project")
     p.set_defaults(func=cmd_lint)

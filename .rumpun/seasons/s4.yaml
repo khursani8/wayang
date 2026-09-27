@@ -1,7 +1,7 @@
 # s4 - creator features batch 1 (the S-effort + P0 set)
 id: s4
 parent: s3
-goal: "Ship: caption export (SRT/VTT from timeline.json), voices browser (revolab ids in the CLI), line preview (tts --line N audition), stats command (duration/talk-time estimate), title and closing cards, init-episode scaffold, Rimau in the default cast"
+goal: "Ship: caption export (SRT/VTT from timeline.json), voices browser (revolab ids in the CLI), line preview (tts --line N audition), stats command (duration/talk-time estimate), init-episode scaffold, Rimau in the default cast"
 metric: "each feature demonstrated on a demo project: captions.srt exists and parses, audition wav plays, stats --json accurate vs render, title/closing cards visible, init-episode scaffolds from series.yaml"
 mode: fight
 methodology:

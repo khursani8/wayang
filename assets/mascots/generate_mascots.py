@@ -25,7 +25,7 @@ OUT_DIR = Path("/tmp/mascot-art")
 EMO_DIR = Path("/tmp/mascot-art/emotions")
 RIMAU_DIR = Path("/tmp/mascot-art/rimau")
 ART_ROOT = Path("/mnt/data/work/wayang")
-RIMAU_PROJECT_DIR = Path("/mnt/data/work/wayang/projects/rimau-intro/assets/images/rimau")
+FRAMES_ROOT = ART_ROOT / "assets" / "mascots" / "frames"
 TEMPLATE_NAMES = ("dialog", "presentation", "storytelling", "community")
 EMOTIONS = ("happy", "surprised", "thinking", "sad")
 SIZE = 1024
@@ -707,20 +707,30 @@ def generate_emotions() -> None:
             )
 
 
+def deploy_base() -> None:
+    """Copy the base lip-flap pairs into the canonical frames root."""
+    copied = 0
+    for character in ("momo", "kiki"):
+        for state in ("open", "close"):
+            src = OUT_DIR / f"{character}_{state}.png"
+            dest_dir = FRAMES_ROOT / character
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, dest_dir / f"mouth_{state}.png")
+            copied += 1
+    logger.info("deployed %d base PNGs to %s", copied, FRAMES_ROOT)
+
+
 def deploy_emotions() -> None:
-    roots = [ART_ROOT / "templates" / name / "assets" / "images" for name in TEMPLATE_NAMES]
-    roots.append(ART_ROOT / "projects" / "rimau-intro" / "assets" / "images")
     copied = 0
     for character in ("momo", "kiki"):
         for emotion in EMOTIONS:
             for state in ("open", "close"):
                 src = EMO_DIR / f"{character}_{emotion}_{state}.png"
-                for root in roots:
-                    dest_dir = root / character
-                    dest_dir.mkdir(parents=True, exist_ok=True)
-                    shutil.copyfile(src, dest_dir / f"{emotion}_{state}.png")
-                    copied += 1
-    logger.info("deployed %d emotion PNGs to %d asset roots", copied, len(roots))
+                dest_dir = FRAMES_ROOT / character
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dest_dir / f"{emotion}_{state}.png")
+                copied += 1
+    logger.info("deployed %d emotion PNGs to %s", copied, FRAMES_ROOT)
 
 
 RIMAU_DEPLOY_NAMES = {
@@ -782,10 +792,11 @@ def generate_rimau() -> None:
 
 
 def deploy_rimau() -> None:
-    RIMAU_PROJECT_DIR.mkdir(parents=True, exist_ok=True)
+    dest_dir = FRAMES_ROOT / "rimau"
+    dest_dir.mkdir(parents=True, exist_ok=True)
     for src_name, dest_name in RIMAU_DEPLOY_NAMES.items():
-        shutil.copyfile(RIMAU_DIR / src_name, RIMAU_PROJECT_DIR / dest_name)
-    logger.info("deployed %d rimau PNGs to %s", len(RIMAU_DEPLOY_NAMES), RIMAU_PROJECT_DIR)
+        shutil.copyfile(RIMAU_DIR / src_name, dest_dir / dest_name)
+    logger.info("deployed %d rimau PNGs to %s", len(RIMAU_DEPLOY_NAMES), dest_dir)
 
 
 # --------------------------------------------------------------------- pipeline
@@ -913,6 +924,7 @@ def check_presentation() -> None:
 
 
 def main() -> None:
+    deploy_base()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     jobs = [
         ("momo_open.png", momo_body(momo_mouth_open())),

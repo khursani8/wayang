@@ -75,6 +75,12 @@ def cmd_init(args):
         fail(f"projects/{name} already exists")
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(src, dst)
+    for char_dir in sorted(paths.mascots_frames_dir().iterdir()):
+        if char_dir.is_dir():
+            dest = dst / "assets" / "images" / char_dir.name
+            dest.mkdir(parents=True, exist_ok=True)
+            for frame in char_dir.glob("*.png"):
+                shutil.copyfile(frame, dest / frame.name)
     (dst / "template.yaml").rename(dst / "project.yaml")
     if args.preset != "landscape":
         w, h = PRESETS.get(args.preset, (1920, 1080))
@@ -120,6 +126,12 @@ def cmd_init_series(args):
     )
     ep_dir = sdir / "episodes" / args.first_episode
     shutil.copytree(src, ep_dir)
+    for char_dir in sorted(paths.mascots_frames_dir().iterdir()):
+        if char_dir.is_dir():
+            dest = ep_dir / "assets" / "images" / char_dir.name
+            dest.mkdir(parents=True, exist_ok=True)
+            for frame in char_dir.glob("*.png"):
+                shutil.copyfile(frame, dest / frame.name)
     (ep_dir / "template.yaml").rename(ep_dir / "project.yaml")
     log.info(
         "series projects/%s: series.yaml + episodes/%s (add more: wayang init %s <series>/episodes/<ep>)",

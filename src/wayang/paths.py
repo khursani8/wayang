@@ -89,3 +89,10 @@ def bundled_engines() -> list[str]:
     if root.is_dir():
         return sorted(d.name for d in root.iterdir() if (d / "build.sh").is_file())
     return []
+
+
+def mascots_frames_dir() -> Path:
+    """Canonical mascot frames: <character>/<frame>.png per character."""
+    if REPO_ROOT is not None:
+        return REPO_ROOT / "assets" / "mascots" / "frames"
+    return _pkg_dir("mascots", "frames")

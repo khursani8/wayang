@@ -299,7 +299,12 @@ for (const seg of timeline) {
   idSeq += 1;
   clips.push(`    <audio class="clip" id="line-${line.id}-audio" src="voices/${seg.file}" data-start="${seg.start.toFixed(3)}" data-duration="${seg.dur.toFixed(3)}" data-playback-rate="${playbackRate}" data-track-index="20"></audio>`);
   if (line.se) {
-    const seAbs = path.join(projectDir, line.se.src);
+    let seAbs = path.join(projectDir, line.se.src);
+    if (!fs.existsSync(seAbs)) {
+      const shared = path.join(repoRoot, "assets", "se", path.basename(line.se.src));
+      if (!fs.existsSync(shared)) die(`script id ${line.id}: sound effect missing: ${line.se.src}`);
+      seAbs = shared;
+    }
     const seWork = path.join(workDir, line.se.src);
     fs.mkdirSync(path.dirname(seWork), { recursive: true });
     fs.copyFileSync(seAbs, seWork);

@@ -23,7 +23,12 @@ from wayang.project import (
     load_lenient,
     series_episodes,
 )
-from wayang.render_checks import duration_guard, lint_project
+from wayang.render_checks import (
+    duration_guard,
+    ffmpeg_frame,
+    ffprobe_json,
+    lint_project,
+)
 from wayang.tts_providers import (
     PROVIDERS,
     ProviderError,
@@ -617,6 +622,46 @@ def _stamp(t: float, sep: str) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}{sep}{ms:03d}"
 
 
+def _contact_sheet(mp4: Path, windows, out_png: Path, tmp: Path, total: float) -> None:
+    """3-wide grid of frames sampled at each line midpoint."""
+    from PIL import Image
+
+    picks = windows[:9]
+    frames = []
+    for i, (line, start, end) in enumerate(picks):
+        f = tmp / f"sheet{i}.png"
+        if ffmpeg_frame(mp4, start + (end - start) * 0.6, total, f):
+            frames.append(Image.open(f).convert("RGB"))
+    if not frames:
+        fail("contact sheet: no frames extracted")
+    fw, fh = frames[0].size
+    scale = 640 / fw
+    tw, th = 640, int(fh * scale)
+    cols = 3
+    rows = (len(frames) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * tw, rows * th), (10, 10, 10))
+    for i, fr in enumerate(frames):
+        fr = fr.resize((tw, th))
+        sheet.paste(fr, ((i % cols) * tw, (i // cols) * th))
+    sheet.save(out_png)
+
+
+def cmd_sheet(args):
+    pdir = resolve_project(args.project)
+    data, _sf, _pre = load_lenient(pdir)
+    if data is None:
+        fail("project could not be loaded")
+    mp4 = pdir / "out" / "video.mp4"
+    if not mp4.is_file():
+        fail(f"no render at {mp4} - run wayang render first")
+    total = float(ffprobe_json(mp4)["format"]["duration"])
+    windows, _from_vendor = _line_windows(data, pdir)
+    tmp = pdir / "out" / ".lint"
+    tmp.mkdir(parents=True, exist_ok=True)
+    _contact_sheet(mp4, windows, pdir / "out" / "contact-sheet.png", tmp, total)
+    log.info("contact sheet: %s", pdir / "out" / "contact-sheet.png")
+
+
 def cmd_lint(args):
     pdir = resolve_project(args.project)
     data = validate_project(pdir)
@@ -626,7 +671,7 @@ def cmd_lint(args):
     lint_project(pdir, mp4, data)
 
 
-def render_one(pdir: Path, skip_lint: bool = False) -> None:
+def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False) -> None:
     data = validate_project(pdir)
     # The vendor consumes one canonical file. When series inheritance applied,
     # materialize the merged doc so the vendor never needs to know about series.
@@ -644,7 +689,10 @@ def render_one(pdir: Path, skip_lint: bool = False) -> None:
         fail(f"vendor '{vendor}' has no build.sh (expected {build})" + ("" if paths.REPO_ROOT is not None else " - run: wayang setup"))
     out = pdir / "out"
     log.info("rendering via vendor '%s'", vendor)
-    proc = subprocess.run(["bash", str(build), str(pdir), str(out)], check=False)
+    draft_env = dict(os.environ)
+    if draft:
+        draft_env["WAYANG_DRAFT"] = "1"
+    proc = subprocess.run(["bash", str(build), str(pdir), str(out)], check=False, env=draft_env)
     if proc.returncode != 0:
         fail(f"vendor build.sh exited {proc.returncode}")
     log.info("done: %s", out / "video.mp4")
@@ -661,7 +709,7 @@ def cmd_render(args):
             "series: %d episode(s): %s", len(targets), ", ".join(t.name for t in targets)
         )
     for ep in targets:
-        render_one(ep, skip_lint=args.skip_lint)
+        render_one(ep, skip_lint=args.skip_lint, draft=args.draft)
 
 
 def main():
@@ -697,9 +745,10 @@ def main():
     p.add_argument("--force", action="store_true", help="regenerate even when cached")
     p.set_defaults(func=cmd_tts)
 
-    p = sub.add_parser("render", help="render a project via its vendor engine")
+    p.add_argument("project")
     p.add_argument("project")
     p.add_argument("--skip-lint", action="store_true", help="skip the post-render visibility lint")
+    p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
     p.set_defaults(func=cmd_render)
 
     p = sub.add_parser("captions", help="export SRT/VTT captions from the render timeline")
@@ -719,6 +768,9 @@ def main():
     p.add_argument("series")
     p.add_argument("name")
     p.set_defaults(func=cmd_init_episode)
+    p = sub.add_parser("sheet", help="review contact sheet from the rendered video")
+    p.add_argument("project")
+    p.set_defaults(func=cmd_sheet)
     p = sub.add_parser("lint", help="check a rendered video for invisible objects")
     p.add_argument("project")
     p.set_defaults(func=cmd_lint)

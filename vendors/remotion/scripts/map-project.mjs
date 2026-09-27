@@ -136,10 +136,16 @@ for (const line of script) {
     mapped.visual = v;
   }
   if (line.se) {
-    if (!fs.existsSync(path.join(projectDir, line.se.src))) {
-      die(`script id ${line.id}: sound effect missing: ${line.se.src}`);
+    let seSrc = line.se.src;
+    if (!fs.existsSync(path.join(projectDir, seSrc))) {
+      const shared = path.join(repoRoot, "assets", "se", path.basename(seSrc));
+      if (fs.existsSync(shared)) {
+        seSrc = path.join("assets", "se", path.basename(seSrc));
+      } else {
+        die(`script id ${line.id}: sound effect missing: ${line.se.src}`);
+      }
     }
-    mapped.se = { src: line.se.src, volume: line.se.volume ?? 1 };
+    mapped.se = { src: seSrc, volume: line.se.volume ?? 1 };
   }
   engineScript.push(mapped);
 }

@@ -109,13 +109,27 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
     if (W, H) != (s.get("video", {}).get("width", W), s.get("video", {}).get("height", H)):
         log.warning("render size %dx%d differs from settings", W, H)
 
-    # layout overlap: subtitle band vs character corner boxes
-    for cid, c in data["characters"].items():
-        side = c.get("position", "right")
-        cx0 = 40 if side == "left" else W - 40 - charH
-        if subX0 < cx0 + charH and subX1 > cx0 and subY0 < H and subY1 > H - charH:
-            log.error("layout: subtitle band overlaps character '%s' box", cid)
-            return False
+    tl_path = mp4.parent / "timeline.json"
+    tl = None
+    if tl_path.is_file():
+        tl = json.loads(tl_path.read_text(encoding="utf-8"))
+
+    # layout overlap: prefer the mapper-declared boxes, fall back to computed
+    declared = (tl or {}).get("layout")
+    if declared:
+        band = declared.get("subtitle_band") or []
+        for entry in declared.get("characters", []):
+            bx = entry.get("box") or [0, 0, 0, 0]
+            if band[0] < bx[2] and band[2] > bx[0] and band[1] < bx[3] and band[3] > bx[1]:
+                log.error("layout: subtitle band overlaps character '%s' box", entry.get("id"))
+                return False
+    else:
+        for cid, c in data["characters"].items():
+            side = c.get("position", "right")
+            cx0 = 40 if side == "left" else W - 40 - charH
+            if subX0 < cx0 + charH and subX1 > cx0 and subY0 < H and subY1 > H - charH:
+                log.error("layout: subtitle band overlaps character '%s' box", cid)
+                return False
 
     manifest_path = pdir / "voices" / "manifest.json"
     manifest = None
@@ -124,15 +138,14 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
     real_voices = bool(manifest and manifest.get("engines"))
 
     windows = []
-    tl_path = mp4.parent / "timeline.json"
-    if tl_path.is_file():
-        tl = json.loads(tl_path.read_text(encoding="utf-8"))
-        by_id = {int(entry["id"]): entry for entry in tl.get("lines", [])}
-        for line in data["script"]:
-            entry = by_id.get(int(line["id"]))
-            if entry:
-                dur = float(entry["end"]) - float(entry["start"])
-                windows.append((line, float(entry["start"]), dur))
+    by_id = {}
+    if tl:
+        by_id = {int(e["id"]): e for e in tl.get("lines", [])}
+    for line in data["script"]:
+        entry = by_id.get(int(line["id"]))
+        if entry:
+            dur = float(entry["end"]) - float(entry["start"])
+            windows.append((line, float(entry["start"]), dur))
         if windows:
             log.info("lint: using vendor timeline.json (%d lines)", len(windows))
     if not windows:

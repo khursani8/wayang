@@ -251,6 +251,10 @@ if (settings.bgm && settings.bgm.src) {
 }
 
 // ---- subtitle geometry: raise above character boxes on intersect ----
+const W2 = settings.video?.width ?? 1920;
+const H2 = settings.video?.height ?? 1080;
+const W = settings.video?.width ?? 1920;
+const H = settings.video?.height ?? 1080;
 const charH = settings.character?.height ?? 275;
 const subBottom = settings.subtitle?.bottom_offset ?? 40;
 const subW = (W * (settings.subtitle?.max_width_percent ?? 55)) / 100;

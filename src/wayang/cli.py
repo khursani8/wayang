@@ -331,6 +331,19 @@ def cmd_check(args):
             if not (pdir / "assets" / "images" / cid / f"{emo}_close.png").is_file():
                 notes.append(f"line {line.get('id')}: emotion '{emo}' has no art for '{cid}' - the base frames will show")
     settings = data.get("settings") or {}
+    caps = _vendor_capabilities(vendor)
+    supported_visuals = ((caps.get("supported") or {}).get("visual_types")) or []
+    scenes_map = settings.get("scenes") or {}
+    if scenes_map and not ((caps.get("supported") or {}).get("scene_backgrounds")):
+        notes.append("per-scene backgrounds are not supported by this vendor - one background renders throughout")
+    if (settings.get("bgm") or {}).get("src") and (caps.get("supported") or {}).get("bgm") is False:
+        notes.append("bgm is not supported by this vendor - the track will not render")
+    for line in lines:
+        v = line.get("visual") or {}
+        vtype = v.get("type")
+        if vtype and supported_visuals and vtype not in supported_visuals:
+            degraded = (caps.get("degraded") or {}).get(vtype)
+            notes.append(f"line {line.get('id')}: visual '{vtype}' degrades on {vendor} - {degraded}")
     if settings.get("background") is not None:
         catalog_dir = paths.backgrounds_dir()
         if catalog_dir.is_dir():
@@ -740,6 +753,17 @@ def cmd_sheet(args):
     tmp.mkdir(parents=True, exist_ok=True)
     _contact_sheet(mp4, windows, pdir / "out" / "contact-sheet.png", tmp, total)
     log.info("contact sheet: %s", pdir / "out" / "contact-sheet.png")
+
+
+def _vendor_capabilities(vendor: str) -> dict:
+    """Read vendors/<engine>/capabilities.yaml; empty dict when absent."""
+    cap = paths.vendor_dir(vendor) / "capabilities.yaml"
+    if not cap.is_file():
+        return {}
+    try:
+        return yaml.safe_load(cap.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError:
+        return {}
 
 
 def cmd_lint(args):

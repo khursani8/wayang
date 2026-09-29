@@ -29,6 +29,11 @@ from wayang.render_checks import (
     ffprobe_json,
     lint_project,
 )
+from wayang.shorts import (
+    load_plan,
+    render_clip,
+    sample_brief,
+)
 from wayang.tts_providers import (
     PROVIDERS,
     ProviderError,
@@ -574,14 +579,14 @@ def cmd_captions(args):
     if language:
         secondary_language = None
     windows, _from_vendor = _line_windows(data, pdir)
-    text_by_id = {int(l["id"]): (l.get("display_text") or l.get("text", "")) for l in data.get("script", [])}
+    text_by_id = {int(line["id"]): (line.get("display_text") or line.get("text", "")) for line in data.get("script", [])}
     if language:
-        missing = [l["id"] for l in data.get("script", []) if not (l.get("translations") or {}).get(language)]
+        missing = [line["id"] for line in data.get("script", []) if not (line.get("translations") or {}).get(language)]
         if missing:
             fail(f"language '{language}': lines missing translations: {missing}")
     secondary_by_id = {
-        int(l["id"]): ((l.get("translations") or {}).get(secondary_language))
-        for l in data.get("script", [])
+        int(line["id"]): ((line.get("translations") or {}).get(secondary_language))
+        for line in data.get("script", [])
     } if secondary_language else {}
     srt_lines, vtt_lines = [], []
     n = 0
@@ -839,6 +844,31 @@ def cmd_render(args):
         render_one(ep, skip_lint=args.skip_lint, draft=args.draft, language=args.language)
 
 
+def cmd_shorts_sample(args):
+    pdir = resolve_project(args.project)
+    video = Path(args.video) if args.video else pdir / "out" / "video.mp4"
+    out_dir = Path(args.out) if args.out else pdir / "shorts" / "brief"
+    sample_brief(video, out_dir, n_frames=args.frames, bin_seconds=args.bin)
+    log.info("next: read the brief, then write %s (see docs/shorts.md)", pdir / "shorts" / "plan.yaml")
+
+
+def cmd_shorts_render(args):
+    pdir = resolve_project(args.project)
+    plan_path = Path(args.plan) if args.plan else pdir / "shorts" / "plan.yaml"
+    plan, _src = load_plan(plan_path)
+    clips = plan["clips"]
+    if args.clip:
+        clips = [c for c in clips if c["id"] == args.clip]
+        if not clips:
+            fail(f"no clip id '{args.clip}' in the plan")
+    clips_root = pdir / "shorts" / "clips"
+    results = [render_clip(Path(plan["source"]), c, clips_root / c["id"], force=args.force) for c in clips]
+    ok = sum(1 for r in results if r.get("ok"))
+    log.info("shorts-render: %d/%d clip(s) verified under %s", ok, len(results), clips_root)
+    if ok < len(results):
+        raise SystemExit(1)
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     parser = argparse.ArgumentParser(prog="wayang", description="Wayang CLI")
@@ -916,6 +946,21 @@ def main():
     p = sub.add_parser("doctor", help="report prerequisites: tools, TTS keys, engines")
     p.add_argument("--json", action="store_true", help="machine-readable report")
     p.set_defaults(func=cmd_doctor)
+
+    p = sub.add_parser("shorts-sample", help="sample a rendered video into a shorts brief (frames + audio curve)")
+    p.add_argument("project")
+    p.add_argument("--video", help="source video (default: <project>/out/video.mp4)")
+    p.add_argument("--out", help="brief dir (default: <project>/shorts/brief)")
+    p.add_argument("--frames", type=int, default=12, help="brief frames to sample (default 12)")
+    p.add_argument("--bin", type=float, default=1.0, help="audio curve bin seconds (default 1.0)")
+    p.set_defaults(func=cmd_shorts_sample)
+
+    p = sub.add_parser("shorts-render", help="cut + verify portrait clips from shorts/plan.yaml")
+    p.add_argument("project")
+    p.add_argument("--plan", help="plan file (default: <project>/shorts/plan.yaml)")
+    p.add_argument("--clip", help="render a single clip id only")
+    p.add_argument("--force", action="store_true", help="re-render even verified clips")
+    p.set_defaults(func=cmd_shorts_render)
 
     args = parser.parse_args()
     args.func(args)

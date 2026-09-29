@@ -14,9 +14,9 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 ## Current state (verified 2026-09-29)
 
 - Repo: github.com/khursani8/wayang, private, branch main, clean tree,
-  HEAD `cd7083d`. Local checkout: /mnt/data/work/wayang. A user clone
-  exists at /home/sani/work/wayang (at commit 848d28e, behind main —
-  `git pull` there to catch up).
+  HEAD. Local checkout: /mnt/data/work/wayang, the only checkout.
+  /home/sani/work/wayang is the same directory (same inode via the
+  /home/sani/work link); never rm projects/ through the second path.
 - Installed CLI: `wayang` 0.2.0 via uv tool (reinstall with
   `uv tool install /mnt/data/work/wayang --reinstall --force` after
   source edits — uv caches the built wheel by name+version, so a version
@@ -24,10 +24,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 - PyPI: name `wayang` verified available; wheel + sdist built in dist/
   (gitignored); upload is one command away with the owner's token:
   `uv publish dist/*`.
-- Live projects in `projects/`: video-tutorial (42.6s bilingual tutorial,
-  0.9x pace), rimau-intro (25s promo with per-language voices), hf-demo,
-  dialog-ms, est-demo, portrait-demo (1080x1920 en variant),
-  wayang-tutorial (37s full-usage video in Malay).
+- Live projects (2026-09-29): video-anda (65.8s full tutorial, verified) and wayang-tutorial (project.yaml + shorts plan restored from the session record; voices and render need a re-run with credits). The other 8 demo projects were deleted 2026-09-29 by a same-path rm mistake and are not recoverable.
 - Season plan s2-s6: ALL resolved. Ledger: .rumpun/ (append-only;
   directives stay "pending" as historical records — closures are
   appended as new entries).

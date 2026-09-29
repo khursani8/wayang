@@ -2,6 +2,7 @@
 
 Read this first, then `REPO_ANALYSIS/00-overview.md` (2,000+ lines of verified
 reference across six files) and `docs/` for the user-facing documentation.
+This handoff was written 2026-09-29 for a fresh-context continuation.
 
 ## Goal
 
@@ -13,16 +14,23 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 ## Current state (verified 2026-09-29)
 
 - Repo: github.com/khursani8/wayang, private, branch main, clean tree,
-  HEAD `984e1ae` (PyPI metadata + tag v0.2.0). Local checkout:
-  /mnt/data/work/wayang. A user clone exists at /home/sani/work/wayang.
+  HEAD `cd7083d`. Local checkout: /mnt/data/work/wayang. A user clone
+  exists at /home/sani/work/wayang (at commit 848d28e, behind main —
+  `git pull` there to catch up).
 - Installed CLI: `wayang` 0.2.0 via uv tool (reinstall with
   `uv tool install /mnt/data/work/wayang --reinstall --force` after
   source edits — uv caches the built wheel by name+version, so a version
-  bump or `--reinstall` is required or the old code keeps running).
-- Live projects in `projects/`: video-tutorial (42.6s English-Malay
-  bilingual tutorial), rimau-intro, hf-demo, dialog-ms, est-demo,
-  portrait-demo (1080x1920), wayang-tutorial (37s full-usage video).
-- Season plan s2-s6: ALL resolved. Ledger: .rumpun/ (append-only).
+  bump or --reinstall is required or the old code keeps running).
+- PyPI: name `wayang` verified available; wheel + sdist built in dist/
+  (gitignored); upload is one command away with the owner's token:
+  `uv publish dist/*`.
+- Live projects in `projects/`: video-tutorial (42.6s bilingual tutorial,
+  0.9x pace), rimau-intro (25s promo with per-language voices), hf-demo,
+  dialog-ms, est-demo, portrait-demo (1080x1920 en variant),
+  wayang-tutorial (37s full-usage video in Malay).
+- Season plan s2-s6: ALL resolved. Ledger: .rumpun/ (append-only;
+  directives stay "pending" as historical records — closures are
+  appended as new entries).
 
 ## Architecture (one screen)
 
@@ -31,8 +39,9 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
   check, validate, tts, render, captions, voices, stats, init-episode,
   sheet, lint, presets, check-templates, setup, doctor.
 - `src/wayang/project.py` — lenient load + series deep-merge.
-- `src/wayang/render_checks.py` — duration guard, visibility lint,
-  ffprobe/ffmpeg helpers.
+- `src/wayang/render_checks.py` — duration guard, visibility lint
+  (presence-vs-theme character check), ffprobe/ffmpeg helpers, and it
+  consumes the mapper-declared layout from timeline.json.
 - `src/wayang/tts_providers.py` — revolab + openai clients,
   provider_voices for browsing.
 - `src/wayang/paths.py` — resource resolution (REPO_ROOT dev mode vs
@@ -44,12 +53,13 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
   renders; `wayang check` warns on degraded keys.
 - `templates/<format>/` — five formats (dialog, presentation,
   storytelling, community, tutorial). Tutorial renders simulated
-  terminal steps via GSAP.
+  terminal steps via GSAP and teaches the script-writing structure.
 - `assets/mascots/` — the SVG art generator (Momo tapir, Kiki hornbill,
   Rimau tiger; lip-flap pairs + emotion sets; canonical frames deployed
-  to assets/mascots/frames/<character>/).
+  to assets/mascots/frames/<character>/ — templates no longer ship art,
+  init copies the cast).
 - `assets/background/generate_themes.py` — all 11 background themes
-  including the chalkboard; writes the shared catalog in
+  including the chalkboard (merged); writes the shared catalog in
   assets/backgrounds/ (single copy, both vendors read it).
 - `assets/se/` — shared sound-effect catalog.
 
@@ -71,6 +81,8 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 - The version bump before reinstalling the tool: uv caches the built
   wheel by name+version; without a bump or --reinstall the old code
   keeps running and wastes a debug cycle.
+- Writing bg chains as a script file (the Write tool) with the cd baked
+  in, then `bash script.sh` — immune to the session cwd drift.
 
 ## What did not work (do not repeat)
 
@@ -95,8 +107,8 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 
 1. OpenAI TTS provider: code-complete, never verified against the live
    API (no OPENAI_API_KEY on this box). Revolab is verified end to end.
-2. BGM ducking depth: remotion dips to 25% in voice windows (frame
-   callback); hyperframes segments the bed. No sidechain compression.
+2. BGM ducking: remotion dips to 25% in voice windows (frame callback);
+   hyperframes segments the bed. No sidechain compression.
 3. Shared mascot frames dir: templates stopped shipping art and init
    copies the cast, but the emotion-refresh list in generate_mascots.py
    (TEMPLATE_NAMES) still misses the tutorial template.
@@ -105,34 +117,39 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 5. Studio theme: strengthened once (vignette + floor band); the owner
    has not re-reviewed the contrast since.
 6. Kiki sad expression: deepened (tear + downturned mouth); needs the
-   owner's eyeball on /tmp/mascot-art/emotions/kiki_sad_close.png.
+   owner's eyeball on the generated frame.
 7. The Wayang history contains the upstream template repo name in old
    commit messages; scrubbing requires git filter-repo + force push
    (owner decided to leave it).
 
 ## Next steps (the queue)
 
-1. s6 close-out is done; if the owner wants the last polish items:
-   Kiki sad contrast (done, needs eyeball), studio theme v3, docs sweep.
-2. The pending operator directive: an agent that understands long videos
-   and suggests YouTube Shorts (portrait clips, which parts to clip) —
-   recorded as rumpun directive 8, planned as season s7. Pipeline: frame
-   + audio sampling, Claude vision analysis, clip windows + portrait
-   crop plan, optional render.
-3. PyPI publish: `uv publish dist/*` with the owner's token; the name
-   `wayang` is free (verified 404).
+1. Pending operator directive 8 (rumpun ledger): an agent that
+   understands long videos and suggests YouTube Shorts (portrait clips,
+   which parts to clip) — planned as season s7. Pipeline: frame + audio
+   sampling, Claude vision analysis, clip windows + portrait crop plan,
+   optional render.
+2. The /brag reference repo (MIT, latent-spaces/brag) is the pattern
+   source for the promo skill: staged references, per-stage gates,
+   composition briefs, timestamped outputs, tone presets. Read its
+   skills/brag/references/ before building the Wayang promo skill.
+3. The two declined-with-reasons restructures (shared work/ root, full
+   CLI split) stay declined unless the owner reopens them.
 
 ## Environment traps (this machine)
 
 - Bare `python3` prints a uv banner and fails. Use `uv run --with ...`.
-- The Bash tool cwd sticks to the last cd; background tasks inherit the
-  session cwd, not your last cd. Always prefix `cd /mnt/data/work/wayang &&`.
+- The Bash tool cwd sticks to the last cd and background tasks inherit
+  the session cwd, not your last cd. Always prefix
+  `cd /mnt/data/work/wayang &&` or use absolute paths.
 - Exported env vars do not persist between tool calls. Inline them:
   `KEY=... command`.
 - Pipes mask exit codes (`cmd | tail` exits 0). Gate critical chains
   with file checks instead.
 - `gh` has two accounts; the active one is switchable via
-  `gh auth switch -h github.com -u khursani8`. Current: khursani8.
+  `gh auth switch -h github.com -u khursani8`. Private repos under the
+  inactive account are invisible to the active token — check both
+  owners before concluding a repo is gone.
 - The Revolab TTS key travels inline in tool calls. It is in the session
   logs — rotate it when convenient. Do not commit it.
 

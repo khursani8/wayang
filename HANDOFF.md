@@ -129,6 +129,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
    which parts to clip) — planned as season s7. Pipeline: frame + audio
    sampling, Claude vision analysis, clip windows + portrait crop plan,
    optional render.
+   s7.yaml is written 2026-09-29, the run is deferred by the operator. Resume with: rumpun season start s7
 2. The /brag reference repo (MIT, latent-spaces/brag) is the pattern
    source for the promo skill: staged references, per-stage gates,
    composition briefs, timestamped outputs, tone presets. Read its

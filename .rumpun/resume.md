@@ -6,7 +6,7 @@
 - evidence: /mnt/data/work/wayang/.rumpun/runs/s5/verdicts.jsonl
 
 ## Running
-- nothing running
+- nothing running. s7 planned (s7.yaml written 2026-09-29), the run is deferred by the operator. Resume: rumpun season start s7
 
 ## Pending directives
 - seq 0: Operator directive 2026-09-26: build content_engine MVP end to end, no questions. Education + community templates, canonical YAML schema, vendors/remotion port with AGENTS.md, tools/ce.py. Consult codex + glm-5.3 + fable before schema freeze.

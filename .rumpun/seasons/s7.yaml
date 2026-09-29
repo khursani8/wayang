@@ -24,7 +24,7 @@ methodology:
       primitive: evaluate
       agents: writers
       prompt: prompts/base/evaluate.md
-      reads: "src/wayang/ projects/"
+      reads: "src/wayang/ docs/ projects/"
       writes: ".rumpun/runs/s7/"
 writers:
   - name: fable

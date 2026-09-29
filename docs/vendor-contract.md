@@ -25,6 +25,14 @@ vendor #3 onboards without copy-paste.
   subtitle ink, text-card ink, character animation in the corner boxes;
   real-voice lines must exceed -55 dB.
 
+## Lip sync (optional)
+
+`PROJECT_DIR/voices/lipsync.json` may be present after the platform TTS
+step: `{"fps": 30, "lines": {"01_momo": [[0.0, 0.31], ...]}}` - mouth-open
+windows in seconds, relative to each voice start (keys are wav name stems).
+When present, drive the mouth art from these windows; when absent
+(draft/estimate renders), fall back to your fixed mouth clock.
+
 ## Background themes
 
 Shared catalog at `assets/backgrounds/` (repo root). Resolve it relative to

@@ -200,6 +200,8 @@ export const Main: React.FC = () => {
           characterId={c.id}
           isSpeaking={isSpeaking && currentLine?.character === c.id}
           emotion={currentLine?.character === c.id ? currentLine.emotion : "normal"}
+          mouth={currentLine?.mouth}
+          lineFrame={currentLine ? frame - currentLineStartFrame : undefined}
         />
       ))}
 

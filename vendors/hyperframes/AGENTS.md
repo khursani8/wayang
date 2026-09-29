@@ -55,9 +55,12 @@ playback, durations from the manifest, build log names the engines;
 (data-playback-rate) and pauses plus the timeline scale to match.
 0.9 gives a slower, calmer tutorial pace.
 
-Lip flap: while a character speaks, mouth_open/mouth_close art alternates
-every 0.2s (needs `settings.character.use_images: true` and art under
-`assets/images/<id>/`); placeholder boxes do not flap.
+Lip sync: when the platform wrote `voices/lipsync.json` (real TTS renders),
+mouth_open art is shown on each open window and mouth_close art during the
+lead silence, the gaps, and the pause after the voice. Without the schedule
+(draft/estimate renders) the mouth alternates every 0.2s. Both need
+`settings.character.use_images: true` and art under `assets/images/<id>/`;
+placeholder boxes do not flap.
 
 ## Duration guard
 

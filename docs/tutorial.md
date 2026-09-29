@@ -104,8 +104,10 @@ art, put PNGs in your project:
     assets/images/<character_id>/mouth_open.png
     assets/images/<character_id>/mouth_close.png
 
-and set `settings.character.use_images: true`. The mouth alternates
-every 0.2s while the character speaks (lip flap). Emotion art uses
+and set `settings.character.use_images: true`. With real voices the mouth
+opens during speech (a lipsync schedule is computed from each line's wav at
+render time) and closes in the pauses; estimate/draft renders fall back to
+a fixed 0.2s alternation. Emotion art uses
 `<emotion>_open.png` / `<emotion>_close.png`.
 
 Two ways to make the art:

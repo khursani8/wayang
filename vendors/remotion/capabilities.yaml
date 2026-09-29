@@ -9,6 +9,7 @@ supported:
   scene_backgrounds: false
   translations: true
   language_variants: true
+  lip_sync: true
 degraded:
   terminal: rendered as a command text card
   scene: parsed, no visual effect

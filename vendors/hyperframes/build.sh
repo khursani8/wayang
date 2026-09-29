@@ -23,6 +23,7 @@ mkdir -p "$WORK"
 
 # Project voices + assets land in the workdir before mapping
 if [ -d "$PROJECT_DIR/voices" ]; then cp -R "$PROJECT_DIR/voices" "$WORK/voices"; fi
+cp "$PROJECT_DIR/voices/lipsync.json" "$WORK/voices/" 2>/dev/null || true
 if [ -d "$PROJECT_DIR/assets" ]; then cp -R "$PROJECT_DIR/assets" "$WORK/assets"; fi
 
 # Canonical YAML -> HyperFrames composition (index.html + package.json +

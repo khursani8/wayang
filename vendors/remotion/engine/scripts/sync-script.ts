@@ -15,6 +15,8 @@ const CHARACTERS_YAML_PATH = path.join(ROOT_DIR, "config", "characters.yaml");
 const DEFAULTS_YAML_PATH = path.join(ROOT_DIR, "config", "defaults.yaml");
 const OUTPUT_PATH = path.join(ROOT_DIR, "src", "data", "script.ts");
 const DURATIONS_PATH = path.join(ROOT_DIR, "public", "voices", "durations.json");
+const LIPSYNC_PATH = path.join(ROOT_DIR, "public", "voices", "lipsync.json");
+const VIDEO_SETTINGS_PATH = path.join(ROOT_DIR, "video-settings.yaml");
 
 interface ScriptLine {
   id: number;
@@ -24,6 +26,7 @@ interface ScriptLine {
   scene: number;
   pauseAfter: number;
   emotion?: string;
+  mouth?: [number, number][];
   visual?: {
     type: string;
     src?: string;
@@ -68,6 +71,24 @@ function loadDurations(): Record<string, number> {
   return {};
 }
 
+// Lipsync schedule (optional): open windows per wav stem, seconds relative to
+// the voice start. Absent on draft/estimate renders -> no mouth field.
+interface LipsyncSchedule {
+  fps: number;
+  lines: Record<string, [number, number][]>;
+}
+
+function loadLipsync(): LipsyncSchedule | null {
+  if (!fs.existsSync(LIPSYNC_PATH)) return null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(LIPSYNC_PATH, "utf-8"));
+    return parsed && parsed.lines ? (parsed as LipsyncSchedule) : null;
+  } catch {
+    console.warn("lipsync.json unreadable, falling back to the fixed mouth clock");
+    return null;
+  }
+}
+
 function main() {
   console.log("Reading config/script.yaml...");
 
@@ -82,6 +103,18 @@ function main() {
 
   // Load existing durations
   const durations = loadDurations();
+
+  // Lipsync windows (seconds, wav-relative) -> line-relative wall frames.
+  // Audio plays at playbackRate, so wav-second t lands at wall frame t*fps/rate.
+  const lipsync = loadLipsync();
+  let engineFps = 30;
+  let playbackRate = 1;
+  if (fs.existsSync(VIDEO_SETTINGS_PATH)) {
+    const vs = yaml.parse(fs.readFileSync(VIDEO_SETTINGS_PATH, "utf-8"));
+    engineFps = vs?.video?.fps ?? 30;
+    playbackRate = vs?.video?.playbackRate ?? 1;
+  }
+  let mouthLines = 0;
 
   // Generate CharacterId type
   const characterIds = Object.keys(characters);
@@ -105,11 +138,23 @@ function main() {
     // Get duration from durations.json or use default
     const durationInFrames = durations[voiceFile] || defaults.newLine.durationInFrames;
 
+    // Mouth open windows for this line, converted to line-relative frames
+    let mouth: [number, number][] | undefined;
+    const windows = lipsync?.lines?.[voiceFile.replace(/\.wav$/, "")];
+    if (lipsync && Array.isArray(windows)) {
+      mouth = windows.map(([a, b]) => [
+        Math.round((a * engineFps) / playbackRate),
+        Math.round((b * engineFps) / playbackRate),
+      ] as [number, number]);
+      if (mouth.length > 0) mouthLines += 1;
+    }
+
     return {
       ...line,
       voiceFile,
       durationInFrames,
       pauseAfter: line.pauseAfter ?? defaults.newLine.pauseAfter,
+      ...(mouth ? { mouth } : {}),
     };
   });
 
@@ -157,6 +202,7 @@ export interface ScriptLine {
   durationInFrames: number;
   pauseAfter: number;
   emotion?: "normal" | "happy" | "surprised" | "thinking" | "sad";
+  mouth?: [number, number][]; // audio-driven open windows, line-relative frames
   translations?: Record<string, string>;
   visual?: VisualContent;
   se?: SoundEffect;
@@ -191,6 +237,7 @@ export const scriptData: ScriptLine[] = ${JSON.stringify(processedLines, null, 2
   fs.writeFileSync(OUTPUT_PATH, tsContent);
   console.log("Generated src/data/script.ts");
   console.log(`   ${processedLines.length} line(s)`);
+  if (mouthLines > 0) console.log(`   lipsync: audio-driven mouth on ${mouthLines} line(s)`);
 }
 
 main();

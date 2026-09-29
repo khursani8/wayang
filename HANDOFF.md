@@ -37,6 +37,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
   sheet, lint, presets, check-templates, setup, doctor.
 - `src/wayang/project.py` — lenient load + series deep-merge.
 - `src/wayang/render_checks.py` — duration guard, visibility lint
+  Amplitude-driven lip sync: after TTS the platform writes voices/lipsync.json (open windows per line, from wav RMS with valley splits and a 0.35s open cap); both vendors drive mouth art from it and fall back to their fixed clock when it is absent (draft/estimate); the lint gates mouth movement between open and closed frames.
   (presence-vs-theme character check), ffprobe/ffmpeg helpers, and it
   consumes the mapper-declared layout from timeline.json.
 - `src/wayang/tts_providers.py` — revolab + openai clients,

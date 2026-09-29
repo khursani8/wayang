@@ -15,6 +15,7 @@ from pathlib import Path
 import yaml
 from jsonschema import Draft202012Validator
 
+from wayang import lipsync
 from wayang import paths
 from wayang.project import (
     deep_merge,
@@ -806,6 +807,21 @@ def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False, languag
         log.info("draft: skipping TTS (estimate timing, silent audio)")
     else:
         run_tts(pdir, data)
+    # Lipsync schedule from the real wavs; vendors fall back to their fixed
+    # mouth clock whenever it is absent. Never fails the render.
+    try:
+        fps = int(((data.get("settings") or {}).get("video") or {}).get("fps", 30) or 30)
+        schedule = lipsync.write_schedule(pdir, fps)
+        if schedule is None:
+            stale = pdir / "voices" / "lipsync.json"
+            if stale.is_file():
+                stale.unlink()
+            log.debug("lipsync: no schedule (draft/estimate render), vendors use the mouth clock")
+        else:
+            count = len(json.loads(schedule.read_text(encoding="utf-8")).get("lines", {}))
+            log.info("lipsync: %d line(s) scheduled -> %s", count, schedule)
+    except Exception:
+        log.exception("lipsync: schedule computation failed, continuing without it")
     vendor = data["meta"]["vendor"]
     build = paths.vendor_dir(vendor) / "build.sh"
     if not build.is_file():

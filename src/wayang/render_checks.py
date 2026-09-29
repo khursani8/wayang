@@ -137,6 +137,15 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     real_voices = bool(manifest and manifest.get("engines"))
 
+    lipsync = None
+    lipsync_path = pdir / "voices" / "lipsync.json"
+    if lipsync_path.is_file():
+        try:
+            lipsync = json.loads(lipsync_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            log.warning("lipsync: %s is not valid JSON, mouth check uses the clock delta", lipsync_path)
+            lipsync = None
+
     windows = []
     by_id = {}
     if tl:
@@ -195,10 +204,44 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
         else:
             log.warning("character presence check skipped: theme png missing for theme '%s'", s.get("background") or "riverbank")
         f2 = tmp / f"f{line['id']}b.png"
-        if ffmpeg_frame(mp4, min(mid + 0.21, duration - 0.2), duration, f2):
-            img2 = Image.open(f2).convert("RGB")
-            anim = band_diff_count(img, img2, box)
-            log.info("character animation delta: %s", anim)
+        mouth_checked = False
+        if lipsync:
+            wins = (lipsync.get("lines") or {}).get(f"{line['id']:02d}_{line['character']}") or []
+            if wins:
+                # wav-relative window seconds -> absolute seconds on the video
+                # clock (audio plays at playback_rate from the line start)
+                rate = float((s.get("video") or {}).get("playback_rate", 1) or 1)
+                open_t = start + (wins[0][0] + wins[0][1]) / 2 / rate
+                gap_t = None
+                if wins[0][0] >= 0.12:
+                    gap_t = start + wins[0][0] / 2 / rate  # lead silence
+                elif len(wins) > 1 and wins[1][0] - wins[0][1] >= 0.12:
+                    gap_t = start + (wins[0][1] + wins[1][0]) / 2 / rate  # gap between windows
+                elif start + dur - (start + wins[-1][1] / rate) >= 0.12:
+                    gap_t = (start + wins[-1][1] / rate + start + dur) / 2  # pause after the voice
+                if gap_t is not None:
+                    o_png = tmp / f"m{line['id']}o.png"
+                    c_png = tmp / f"m{line['id']}c.png"
+                    if ffmpeg_frame(mp4, open_t, duration, o_png) and ffmpeg_frame(mp4, gap_t, duration, c_png):
+                        o_img = Image.open(o_png).convert("RGB")
+                        c_img = Image.open(c_png).convert("RGB")
+                        delta = band_diff_count(o_img, c_img, box)
+                        # Mouth-scale gate: the open-vs-closed art pair differs by
+                        # ~104 sampled px inside the char box (measured on the
+                        # mascot art at charH 275), far below the character
+                        # presence gate charH^2/60. 30 stays under the real art
+                        # diff while sitting above encode noise.
+                        threshold = 30
+                        log.info("line %s: mouth open/closed delta %s (threshold %d)", line["id"], delta, threshold)
+                        mouth_checked = True
+                        if delta < threshold:
+                            log.error("visibility: line %s mouth did not move between open and closed frames", line["id"])
+                            failures += 1
+        if not mouth_checked:
+            if ffmpeg_frame(mp4, min(mid + 0.21, duration - 0.2), duration, f2):
+                img2 = Image.open(f2).convert("RGB")
+                anim = band_diff_count(img, img2, box)
+                log.info("character animation delta: %s", anim)
         if real_voices:
             vol = ffmpeg_volume(mp4, start, dur)
             if vol < -55.0:

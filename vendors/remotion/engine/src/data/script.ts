@@ -41,6 +41,7 @@ export interface ScriptLine {
   durationInFrames: number;
   pauseAfter: number;
   emotion?: "normal" | "happy" | "surprised" | "thinking" | "sad";
+  mouth?: [number, number][];
   visual?: VisualContent;
   se?: SoundEffect;
 }

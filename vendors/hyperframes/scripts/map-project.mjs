@@ -195,6 +195,21 @@ if (fs.existsSync(path.join(projectDir, "assets", "images"))) {
   fs.cpSync(path.join(projectDir, "assets", "images"), path.join(workDir, "images"), { recursive: true });
 }
 
+// ---- lipsync schedule (optional): audio-driven mouth windows ----
+// voices/lipsync.json: { fps, lines: { wav-stem: [[open_start, open_end], ...] } }
+// with seconds relative to the voice start. Absent on draft/estimate renders;
+// the fixed 0.2s mouth clock stays the fallback.
+let lipsyncLines = null;
+const lipsyncPath = path.join(workDir, "voices", "lipsync.json");
+if (fs.existsSync(lipsyncPath)) {
+  try {
+    lipsyncLines = JSON.parse(fs.readFileSync(lipsyncPath, "utf8")).lines || null;
+  } catch {
+    lipsyncLines = null;
+  }
+  if (lipsyncLines) console.log("[map-project] lipsync: audio-driven mouth (voices/lipsync.json present)");
+}
+
 // ---- font: download the requested Google font for @font-face ----
 const font = settings.font || {};
 const fontFamily = font.family || "Inter";
@@ -312,18 +327,46 @@ for (const id of Object.keys(chars)) {
       { start: 0, dur: total, track: 10, z: 10 },
     ));
     for (const seg of timeline.filter((s) => s.line.character === id)) {
-      let k = seg.start;
-      let open = true;
-      let n = 0;
-      while (k < seg.end - 0.01) {
-        const d = Math.min(0.2, seg.end - k);
-        n += 1;
-        clips.push(clip(
-          `<img src="images/${id}/mouth_${open ? "open" : "close"}.png" style="${imgStyle}" />`,
-          { start: k.toFixed(3), dur: d.toFixed(3), track: 11, z: 11 },
-        ));
-        k += d;
-        open = !open;
+      const windows = lipsyncLines ? lipsyncLines[seg.file.replace(/\.wav$/, "")] : undefined;
+      const voiceEnd = seg.start + seg.dur;
+      if (windows !== undefined) {
+        // Audio-driven: open art on each window, explicit closed art on the
+        // gaps (the runtime cannot be trusted to show the track-10 base
+        // through 2-frame holes). The pause after the voice falls back to
+        // the track-10 base image. Window seconds are wav-relative; wall
+        // time divides by the playback rate like the audio element does.
+        const emit = (kind, s, e) => {
+          if (e - s < 0.02) return;
+          clips.push(clip(
+            `<img src="images/${id}/mouth_${kind}.png" style="${imgStyle}" />`,
+            { start: s.toFixed(3), dur: (e - s).toFixed(3), track: 11, z: 11 },
+          ));
+        };
+        const wall = (t) => Math.max(seg.start, Math.min(voiceEnd, seg.start + t / playbackRate));
+        let cursor = seg.start;
+        for (const w of windows) {
+          const s = wall(Number(w[0]));
+          const e = wall(Number(w[1]));
+          emit("close", cursor, s);
+          emit("open", s, e);
+          cursor = e;
+        }
+        emit("close", cursor, voiceEnd);
+      } else {
+        // Fixed 0.2s mouth clock (schedule absent: draft/estimate renders)
+        let k = seg.start;
+        let open = true;
+        let n = 0;
+        while (k < seg.end - 0.01) {
+          const d = Math.min(0.2, seg.end - k);
+          n += 1;
+          clips.push(clip(
+            `<img src="images/${id}/mouth_${open ? "open" : "close"}.png" style="${imgStyle}" />`,
+            { start: k.toFixed(3), dur: d.toFixed(3), track: 11, z: 11 },
+          ));
+          k += d;
+          open = !open;
+        }
       }
     }
   } else {

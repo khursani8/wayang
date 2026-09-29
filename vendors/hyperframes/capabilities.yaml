@@ -9,4 +9,5 @@ supported:
   translations: true
   language_variants: true
   playback_rate: true
+  lip_sync: true
 degraded: {}

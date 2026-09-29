@@ -901,6 +901,7 @@ def main():
     p = sub.add_parser("tts", help="generate line voices via configured TTS engines")
     p.add_argument("project")
     p.add_argument("--force", action="store_true", help="regenerate even when cached")
+    p.add_argument("--line", type=int, default=None, help="synthesize only this line id (preview)")
     p.set_defaults(func=cmd_tts)
 
     p = sub.add_parser("render", help="render a project via its vendor engine")

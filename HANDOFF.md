@@ -122,6 +122,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
    commit messages; scrubbing requires git filter-repo + force push
    (owner decided to leave it).
 
+8. Shorts 9:16 crop from a 1080p source is at most 608px wide; the subtitle band and wide cards clip at the edges. Next: pad-and-blur or subtitle re-layout inside shorts-render.
 ## Next steps (the queue)
 
 1. Pending operator directive 8 (rumpun ledger): an agent that
@@ -129,7 +130,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
    which parts to clip) — planned as season s7. Pipeline: frame + audio
    sampling, Claude vision analysis, clip windows + portrait crop plan,
    optional render.
-   s7.yaml is written 2026-09-29, the run is deferred by the operator. Resume with: rumpun season start s7
+   s7 DELIVERED 2026-09-29, verdict WIN: shorts-sample + shorts-render (docs/shorts.md), clips verified in projects/wayang-tutorial/shorts/.
 2. The /brag reference repo (MIT, latent-spaces/brag) is the pattern
    source for the promo skill: staged references, per-stage gates,
    composition briefs, timestamped outputs, tone presets. Read its

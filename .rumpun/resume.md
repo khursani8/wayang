@@ -1,12 +1,12 @@
-# campaign resume (2026-09-27)
+# campaign resume (2026-09-29)
 
 ## Newest closed season
-- s5: stopped_operator, verdict WIN, implies: s6
-- harvest record: /mnt/data/work/wayang/.rumpun/ledger/2026-09-27_s5-harvest.md
-- evidence: /mnt/data/work/wayang/.rumpun/runs/s5/verdicts.jsonl
+- s7: completed, verdict WIN, implies: s8
+- harvest record: /mnt/data/work/wayang/.rumpun/ledger/2026-09-29_s7-harvest.md
+- evidence: /mnt/data/work/wayang/.rumpun/runs/s7/results.jsonl
 
 ## Running
-- nothing running. s7 planned (s7.yaml written 2026-09-29), the run is deferred by the operator. Resume: rumpun season start s7
+- nothing running
 
 ## Pending directives
 - seq 0: Operator directive 2026-09-26: build content_engine MVP end to end, no questions. Education + community templates, canonical YAML schema, vendors/remotion port with AGENTS.md, tools/ce.py. Consult codex + glm-5.3 + fable before schema freeze.
@@ -18,6 +18,7 @@
 - seq 6: Closure 2026-09-26: directives 0-5 all executed and verified (MVP, TTS providers, revolab, series, shared background catalog done in the structure review). This entry closes them as historical records; the append-only ledger keeps the originals. Remaining known-open: openai provider unverified against the live API (no key), mascot emotion art, hyperframes se/image-visual support, studio theme contrast.
 - seq 7: Operator directive 2026-09-27: distribution requirement - after install (pipx/uv tool/global), the platform must act as a plain CLI: user runs 'wayang <command>' anywhere, no repo clone, no 'uv run tools/wayang.py'. Implies packaging refactor: CLI as an installable package, templates bundled or fetched on first run, vendors set up via a one-time setup/doctor command. Fold into the feature/restructure round.
 - seq 8: Closure 2026-09-27: s4 (captions export, voices browser, line preview, stats, init-episode, Rimau cast) shipped and verified in commit 9b0c0a6. The rumpun harvest needs a spawned season run; s4 was implemented directly in-session, so this entry is its ledger closure.
+- seq 9: Operator directive 2026-09-27: new capability - an agent that understands LONG videos and suggests YouTube Shorts: portrait clips, which parts to clip, suggested titles. Pipeline: frame + audio sampling from the source video, agent analysis (Claude vision session), clip windows + portrait crop plan, optional render through the pipeline. Plan as season s7 after the current queue.
 
 ## Newest audit
 - none on the ledger

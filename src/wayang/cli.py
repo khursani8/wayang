@@ -987,17 +987,79 @@ def cmd_shorts_sample(args):
     log.info("next: read the brief, then write %s (see docs/shorts.md)", pdir / "shorts" / "plan.yaml")
 
 
+def _portrait_master(pdir: Path, plan: dict) -> Path:
+    """Scaffold <project>/shorts/portrait-master for a native re-render.
+
+    The master re-renders the parent through the shorts template
+    layout: geometry and type come from templates/shorts (1080x1920-
+    first), while timing keys (fps, playback_rate, duration) and
+    content settings (secondary language, scenes, bgm) stay with the
+    parent so the cached voices keep the plan's windows and the
+    bilingual tier survives. Script text, line ids, characters and
+    voices stay verbatim, plus copies of voices/ and assets/ so the
+    vendor build finds everything (copies, not symlinks: the vendor
+    workdir copy chain cannot merge through a symlinked operand).
+    Voices arrive with their manifest, so the cached TTS is reused and
+    the re-render spends no credits. The area is gitignored (projects/).
+    """
+    master = pdir / "shorts" / "portrait-master"
+    render = plan["clips"][0]["render"]
+    data = load_project(pdir)
+    tpl = yaml.safe_load((paths.templates_dir() / "shorts" / "template.yaml").read_text(encoding="utf-8"))
+    parent = data.get("settings") or {}
+    video = dict((tpl.get("settings") or {}).get("video") or {})
+    for key in ("fps", "playback_rate", "duration", "tone"):
+        if key in (parent.get("video") or {}):
+            video[key] = parent["video"][key]
+    video["width"], video["height"] = render["width"], render["height"]
+    settings = dict(tpl.get("settings") or {})
+    settings["video"] = video
+    for key in ("subtitle", "scenes", "bgm", "pronunciations", "title_card", "closing_card"):
+        if key in parent:
+            merged = dict(parent[key])
+            merged.update(settings.get(key) or {})
+            settings[key] = merged
+    data["settings"] = settings
+    master.mkdir(parents=True, exist_ok=True)
+    (master / "project.yaml").write_text(
+        yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+    for name in ("voices", "assets"):
+        src_dir = pdir / name
+        if not src_dir.is_dir():
+            continue
+        dst = master / name
+        if dst.is_symlink() or dst.is_file():
+            dst.unlink()
+        elif dst.is_dir():
+            shutil.rmtree(dst)
+        shutil.copytree(src_dir, dst)
+    return master
+
+
 def cmd_shorts_render(args):
     pdir = resolve_project(args.project)
     plan_path = Path(args.plan) if args.plan else pdir / "shorts" / "plan.yaml"
-    plan, _src = load_plan(plan_path)
+    plan, _src = load_plan(plan_path, rerender=args.rerender)
     clips = plan["clips"]
     if args.clip:
         clips = [c for c in clips if c["id"] == args.clip]
         if not clips:
             fail(f"no clip id '{args.clip}' in the plan")
+    master_mp4 = None
+    if args.rerender:
+        master_pdir = _portrait_master(pdir, plan)
+        render_one(master_pdir)
+        master_mp4 = master_pdir / "out" / "video.mp4"
+        source = master_mp4
+    else:
+        source = Path(plan["source"])
     clips_root = pdir / "shorts" / "clips"
-    results = [render_clip(Path(plan["source"]), c, clips_root / c["id"], force=args.force) for c in clips]
+    results = [
+        render_clip(source, c, clips_root / c["id"], force=args.force,
+                    rerender=args.rerender, master=str(master_mp4) if master_mp4 else None)
+        for c in clips
+    ]
     ok = sum(1 for r in results if r.get("ok"))
     log.info("shorts-render: %d/%d clip(s) verified under %s", ok, len(results), clips_root)
     if ok < len(results):
@@ -1101,6 +1163,7 @@ def main():
     p.add_argument("--plan", help="plan file (default: <project>/shorts/plan.yaml)")
     p.add_argument("--clip", help="render a single clip id only")
     p.add_argument("--force", action="store_true", help="re-render even verified clips")
+    p.add_argument("--rerender", action="store_true", help="re-render a portrait master via the project vendor, then trim the plan windows natively (crop ignored)")
     p.set_defaults(func=cmd_shorts_render)
 
     args = parser.parse_args()

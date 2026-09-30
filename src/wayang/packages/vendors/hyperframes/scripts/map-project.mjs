@@ -32,6 +32,19 @@ function die(msg) {
   process.exit(1);
 }
 
+function probeDims(file) {
+  try {
+    const out = execSync(
+      `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 '${file}'`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    const [w, h] = out.trim().split(",").map(Number);
+    if (w > 0 && h > 0) return [w, h];
+  } catch {
+    return [9, 16];
+  }
+}
+
 function probeSeconds(file) {
   try {
     const out = execSync(
@@ -274,6 +287,7 @@ if (subMoved) {
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clips = [];
 const tweenLines = [];
+const embeds = [];
 let idSeq = 0;
 const clip = (inner, extraAttrs, style) => {
   idSeq += 1;
@@ -469,11 +483,27 @@ for (const seg of timeline) {
     fs.copyFileSync(vidAbs, vidWork);
     const vidW = v.width ?? Math.round(W * (portrait ? 0.62 : 0.45));
     const mutedAttr = v.muted === false ? "" : " muted";
-    // Frame treatment: embeds never float bare on the scene (owner
-    // ruling). Default on; frame: false only for full-bleed embeds.
-    const frameStyle = v.frame === false ? "" : "border:5px solid rgba(255,255,255,0.92);";
-    idSeq += 1;
-    clips.push(`    <video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${vidW}px;max-width:88%;max-height:82%;object-fit:contain;${frameStyle}border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.45)" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video>`);
+    // Frame treatment (owner ruling): embeds never float bare on the
+    // scene. The render engine swaps <video> for an injected frame
+    // image and does not carry element borders onto it, so the frame
+    // lives on a card div wrapping the video: plain DOM chrome renders
+    // through the screenshot path and stays glued to the video box.
+    // frame: false only for genuinely full-bleed embeds.
+    const ring = v.frame === false ? 0 : 6;
+    const frameCss = ring
+      ? `border:${ring}px solid rgba(255,255,255,0.92);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.45);background:#0B1220;overflow:hidden;`
+      : "";
+    const [fw, fh] = probeDims(vidWork);
+    const cardW = vidW + 2 * ring;
+    const cardH = Math.round((vidW * fh) / fw) + 2 * ring;
+    const cardX0 = Math.round(W / 2 - cardW / 2);
+    const cardY0 = Math.round(0.47 * H - cardH / 2);
+    embeds.push({ id: `line-${line.id}`, box: [cardX0, cardY0, cardX0 + cardW, cardY0 + cardH] });
+    clips.push(clip(
+      `<div style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${cardW}px;${frameCss}">` +
+      `<video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="display:block;width:100%;object-fit:contain" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video></div>`,
+      { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 6, z: 6 },
+    ));
     console.log(`[map-project] video inset: line ${line.id} shows ${v.src} (${probeSeconds(vidWork).toFixed(2)}s source)`);
   } else if (v && v.type === "text" && v.text) {
     const vs = v.font_size || 84;
@@ -531,6 +561,7 @@ fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({
       id,
       box: [charBoxes[i].x0, charBoxes[i].y0, charBoxes[i].x1, charBoxes[i].y1].map(Math.round),
     })),
+    embeds,
   },
 }));
 console.log(`[map-project] characters: ${Object.keys(chars).join(", ")}`);

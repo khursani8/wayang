@@ -4,7 +4,9 @@ Pipeline: `wayang shorts-sample` writes <project>/shorts/brief (frames +
 audio curve + meta). The analysis step is an agent session that reads the
 brief and writes <project>/shorts/plan.yaml (clip windows, portrait crop
 boxes, titles). `wayang shorts-render` cuts each clip with ffmpeg and
-verifies the renders with real frame probes on disk, not logs.
+verifies the renders with real frame probes on disk, not logs. With
+`--rerender` it first re-renders a portrait master through the project
+vendor, then trims the windows natively (plan crop keys are ignored).
 """
 from __future__ import annotations
 
@@ -131,11 +133,13 @@ def _resolve_source(raw: str, plan_path: Path) -> Path:
     raise SystemExit(f"plan.source video not found (tried: {', '.join(str(c) for c in cands)})")
 
 
-def load_plan(plan_path: Path) -> tuple:
+def load_plan(plan_path: Path, rerender: bool = False) -> tuple:
     """Parse + validate a shorts plan. Returns (plan, source_meta).
 
-    A clip must carry: id, title, start, end, crop [x0,y0,x1,y1] inside the
-    source frame and portrait, optional render {width,height} (even).
+    A clip must carry: id, title, start, end inside the source window and
+    optional render {width,height} (even). crop [x0,y0,x1,y1] inside the
+    source frame and portrait is required in crop mode; rerender mode
+    ignores it (windows are trimmed out of a portrait master instead).
     """
     if not plan_path.is_file():
         raise SystemExit(f"shorts plan not found: {plan_path}")
@@ -165,17 +169,21 @@ def load_plan(plan_path: Path) -> tuple:
             raise SystemExit(f"clip {cid}: start/end must be numbers ({e})")
         if not (0 <= start < end <= dur + 1e-6):
             raise SystemExit(f"clip {cid}: window {start}-{end}s outside source (0-{dur:.2f}s)")
-        box = c.get("crop")
-        if not (isinstance(box, list) and len(box) == 4):
-            raise SystemExit(f"clip {cid}: crop must be [x0, y0, x1, y1]")
-        try:
-            x0, y0, x1, y1 = (int(v) for v in box)
-        except (TypeError, ValueError) as e:
-            raise SystemExit(f"clip {cid}: crop values must be numbers ({e})")
-        if not (0 <= x0 < x1 <= W and 0 <= y0 < y1 <= H):
-            raise SystemExit(f"clip {cid}: crop {box} outside the {W}x{H} frame")
-        if (y1 - y0) <= (x1 - x0):
-            raise SystemExit(f"clip {cid}: crop {x1 - x0}x{y1 - y0} is not portrait")
+        if rerender:
+            if c.get("crop") is not None:
+                log.debug("clip %s: crop ignored in rerender mode", cid)
+        else:
+            box = c.get("crop")
+            if not (isinstance(box, list) and len(box) == 4):
+                raise SystemExit(f"clip {cid}: crop must be [x0, y0, x1, y1]")
+            try:
+                x0, y0, x1, y1 = (int(v) for v in box)
+            except (TypeError, ValueError) as e:
+                raise SystemExit(f"clip {cid}: crop values must be numbers ({e})")
+            if not (0 <= x0 < x1 <= W and 0 <= y0 < y1 <= H):
+                raise SystemExit(f"clip {cid}: crop {box} outside the {W}x{H} frame")
+            if (y1 - y0) <= (x1 - x0):
+                raise SystemExit(f"clip {cid}: crop {x1 - x0}x{y1 - y0} is not portrait")
         render = c.get("render") or {}
         try:
             rw, rh = int(render.get("width", 1080)), int(render.get("height", 1920))
@@ -183,17 +191,23 @@ def load_plan(plan_path: Path) -> tuple:
             raise SystemExit(f"clip {cid}: render width/height must be numbers ({e})")
         if rw <= 0 or rh <= 0 or rw % 2 or rh % 2:
             raise SystemExit(f"clip {cid}: render {rw}x{rh} must be positive even dimensions")
-        c["crop"] = [x0, y0, x1, y1]
+        if not rerender:
+            c["crop"] = [x0, y0, x1, y1]
         c["render"] = {"width": rw, "height": rh}
     log.info("plan ok: %d clip(s), source %s", len(plan["clips"]), video)
     return plan, src
 
 
-def render_clip(video: Path, clip: dict, out_dir: Path, force: bool = False) -> dict:
+def render_clip(video: Path, clip: dict, out_dir: Path, force: bool = False,
+                rerender: bool = False, master: str | None = None) -> dict:
     """Cut one portrait clip, then verify with ffprobe + frame probes on disk.
 
-    Skips clips that already have a passing verify.json unless force=True.
+    Crop mode cuts the window out of a landscape master (crop -> scale).
+    Rerender mode trims the window out of an already-portrait master:
+    no crop filter, no scale. Skips clips that already have a passing
+    verify.json for the same mode unless force=True.
     """
+    mode = "rerender" if rerender else "crop"
     out_dir.mkdir(parents=True, exist_ok=True)
     mp4, verify_path = out_dir / "clip.mp4", out_dir / "verify.json"
     if not force and mp4.is_file() and verify_path.is_file():
@@ -202,21 +216,20 @@ def render_clip(video: Path, clip: dict, out_dir: Path, force: bool = False) -> 
         except (json.JSONDecodeError, OSError) as e:
             log.warning("clip %s: cached verify.json unreadable (%s) - re-rendering", clip["id"], e)
         else:
-            if old.get("ok"):
+            if old.get("ok") and old.get("mode", "crop") == mode:
                 log.info("clip %s: cached verified render (use --force to redo)", clip["id"])
                 return old
 
-    x0, y0, x1, y1 = clip["crop"]
-    w, h = (x1 - x0) - (x1 - x0) % 2, (y1 - y0) - (y1 - y0) % 2
     rw, rh = clip["render"]["width"], clip["render"]["height"]
     start, dur = float(clip["start"]), float(clip["end"]) - float(clip["start"])
-    proc = subprocess.run(
-        ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.3f}", "-i", str(video), "-t", f"{dur:.3f}",
-         "-vf", f"crop={w}:{h}:{x0}:{y0},scale={rw}:{rh}:flags=lanczos,setsar=1",
-         "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-         "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(mp4)],
-        check=False,
-    )
+    cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.3f}", "-i", str(video), "-t", f"{dur:.3f}"]
+    if not rerender:
+        x0, y0, x1, y1 = clip["crop"]
+        w, h = (x1 - x0) - (x1 - x0) % 2, (y1 - y0) - (y1 - y0) % 2
+        cmd += ["-vf", f"crop={w}:{h}:{x0}:{y0},scale={rw}:{rh}:flags=lanczos,setsar=1"]
+    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+            "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(mp4)]
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
     if proc.returncode != 0 or not mp4.is_file():
         log.error("clip %s: ffmpeg render failed:\n%s", clip["id"], proc.stderr.strip()[-800:])
         raise SystemExit(1)
@@ -229,6 +242,7 @@ def render_clip(video: Path, clip: dict, out_dir: Path, force: bool = False) -> 
         "clip": clip["id"],
         "title": clip["title"],
         "mp4": str(mp4),
+        "mode": mode,
         "expected": {"width": rw, "height": rh, "duration": round(dur, 3)},
         "got": {"width": got_w, "height": got_h, "duration": round(got_dur, 3)},
         "portrait": got_h > got_w,
@@ -241,6 +255,8 @@ def render_clip(video: Path, clip: dict, out_dir: Path, force: bool = False) -> 
         good = ffmpeg_frame(mp4, t, got_dur, png)
         verify["probes"].append({"t": round(t, 3), "png": str(png), "ok": good})
         ok = ok and good
+    if rerender:
+        verify["master"] = str(master or video)
     verify["ok"] = ok
     _atomic_write(verify_path, json.dumps(verify, indent=2) + "\n")
     if not ok:

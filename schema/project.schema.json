@@ -446,6 +446,9 @@
             "muted": {
               "type": "boolean"
             },
+            "frame": {
+              "type": "boolean"
+            },
             "color": {
               "type": "string"
             },

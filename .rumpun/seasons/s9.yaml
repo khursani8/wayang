@@ -1,0 +1,37 @@
+# s9 - shorts get their own vertical template (owner verdict: no reflowed landscape)
+id: s9
+parent: s8
+goal: "A dedicated shorts template (templates/shorts) designed 1080x1920-first with its own layout language, wired into shorts-render --rerender so verticals render natively from it, and video-anda's two verticals regenerated from it and scored 10/10 against a sealed rubric. Design rulings from the owner: embeds always framed, embed content is the previous generation render or a native short, never a floating crop"
+metric: "WIN if all hold: (1) templates/shorts scaffolds a working project via wayang init shorts <name>; (2) shorts-render --rerender uses the shorts template as the layout source for the portrait master; (3) the sealed rubric at .rumpun/runs/s9/rubric.md scores 10/10 on both regenerated video-anda verticals with probe evidence; (4) the verticals read as natively vertical: no cropped or reflowed landscape artifacts, subtitle and card zones designed for 9:16; (5) any video-in-video embed carries a visible frame treatment (border or card, never a floating inset), probe-verified; (6) lint, mouth gate, word bans (fail/pypi/kontak), and audio+1s pacing green. LOSS if the shorts template cannot render end to end."
+mode: fight
+methodology:
+  approach: "seal the rubric first; build the template and the rerender integration; then run render-probe-score-fix cycles until the rubric holds on both verticals, recording every cycle's numbers; the spawned rumpun lane is provider-broken (see s8 harvest), so the lane runs in-session"
+  evidence: []
+  primary_change:
+    type: add
+    node: shorts-template
+    baseline: "verticals were crops of the landscape master (608px upscales, clipped text), then a dimension-swapped reflow of the landscape template; owner rejected both as not natively vertical"
+    expected_band: "WIN per the metric line; LOSS if the shorts template cannot render end to end"
+    rollback: "git revert to the s8 head (24864e4)"
+    eval_window: "the sealed rubric scores per cycle + the regenerated verticals + the probe logs"
+  pipeline:
+    - phase: implement
+      primitive: execute
+      agents: writers
+      prompt: prompts/base/execute.md
+      writes: "src/wayang/ vendors/ templates/ projects/ docs/"
+    - phase: verify
+      primitive: evaluate
+      agents: writers
+      prompt: prompts/base/evaluate.md
+      reads: "src/wayang/ vendors/ templates/ projects/ docs/"
+      writes: ".rumpun/runs/s9/"
+writers:
+  - name: fable
+    route: fable
+    lane: solo
+    prompt: prompts/base/execute.md
+    knowledge: full
+    budget: {minutes: 300}
+stop:
+  "on": [all_exited]

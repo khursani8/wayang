@@ -123,6 +123,11 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
             if band[0] < bx[2] and band[2] > bx[0] and band[1] < bx[3] and band[3] > bx[1]:
                 log.error("layout: subtitle band overlaps character '%s' box", entry.get("id"))
                 return False
+        if len(band) == 4:
+            # Portrait geometry: the mapper lifts the subtitle band above
+            # the characters, so the ink check below must probe the
+            # declared band, not the computed one.
+            subX0, subY0, subX1, subY1 = (float(v) for v in band)
     else:
         for cid, c in data["characters"].items():
             side = c.get("position", "right")

@@ -120,7 +120,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
    commit messages; scrubbing requires git filter-repo + force push
    (owner decided to leave it).
 
-8. Shorts 9:16 crop from a 1080p source is at most 608px wide; the subtitle band and wide cards clip at the edges. Next: pad-and-blur or subtitle re-layout inside shorts-render.
+8. RESOLVED 2026-09-30: shorts are re-rendered natively (shorts-render --rerender) from the dedicated vertical template (templates/shorts); no crop pipeline remains.
 9. RESOLVED 2026-09-30: installed-CLI packaging fixed by tools/sync-packages.py (refreshes src/wayang/packages from the live tree; run it before building wheels). uv tool install works from the repo path and from the public git URL.
 ## Next steps (the queue)
 
@@ -129,7 +129,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
    which parts to clip) — planned as season s7. Pipeline: frame + audio
    sampling, Claude vision analysis, clip windows + portrait crop plan,
    optional render.
-   s8 DELIVERED 2026-09-30, verdict WIN: footage payoff line in video-anda, wayang chapters command, wayang init --wizard. Rubric 10/10 against the sealed checklist, evidence in .rumpun/runs/s8/. The spawned rumpun lane was tool-blocked by a provider change, so the lane work ran in-session (see the harvest record).
+   s9 DELIVERED 2026-09-30, verdict WIN: dedicated vertical template (templates/shorts), rerender integration, both verticals regenerated natively at sealed-rubric 10/10, embeds framed. Lane ran in-session (spawn defect). Evidence: .rumpun/runs/s9/.
 2. The /brag reference repo (MIT, latent-spaces/brag) is the pattern
    source for the promo skill: staged references, per-stage gates,
    composition briefs, timestamped outputs, tone presets. Read its

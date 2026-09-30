@@ -32,6 +32,19 @@ function die(msg) {
   process.exit(1);
 }
 
+function probeDims(file) {
+  try {
+    const out = execSync(
+      `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 '${file}'`,
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    const [w, h] = out.trim().split(",").map(Number);
+    if (w > 0 && h > 0) return [w, h];
+  } catch {
+    return [9, 16];
+  }
+}
+
 function probeSeconds(file) {
   try {
     const out = execSync(
@@ -63,6 +76,9 @@ const playbackRate = settings.video?.playback_rate ?? 1;
 const fps = settings.video?.fps ?? 30;
 const W = settings.video?.width ?? 1920;
 const H = settings.video?.height ?? 1080;
+// Portrait (shorts) compositions stack instead of spreading: cards go
+// narrow with wide margins, type grows, embeds carry a frame.
+const portrait = H > W;
 
 for (const k of Object.keys(vendorCfg)) {
   if (!["estimate_cps"].includes(k)) {
@@ -239,6 +255,7 @@ try {
 
 // ---- geometry + overlap detection ----
 const charH = settings.character?.height ?? 275;
+const charInset = portrait ? 56 : 40;
 const subWidthPct = settings.subtitle?.max_width_percent ?? 55;
 const subBottom = settings.subtitle?.bottom_offset ?? 40;
 const subW = (W * subWidthPct) / 100;
@@ -249,7 +266,7 @@ const subX0 = (W - subW) / 2;
 const subX1 = (W + subW) / 2;
 const charBoxes = Object.values(chars).map((c) => {
   const side = c.position === "left" ? "left" : "right";
-  const x0 = side === "left" ? 40 : W - 40 - charH;
+  const x0 = side === "left" ? charInset : W - charInset - charH;
   return { side, x0, x1: x0 + charH, y0: H - charH, y1: H };
 });
 let subY0 = H - subBottom - subH;
@@ -270,6 +287,7 @@ if (subMoved) {
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clips = [];
 const tweenLines = [];
+const embeds = [];
 let idSeq = 0;
 const clip = (inner, extraAttrs, style) => {
   idSeq += 1;
@@ -321,7 +339,7 @@ for (const id of Object.keys(chars)) {
   charPos[id] = { side, hasArt };
   if (useImagesCheck(settings) && hasArt) {
     charPos[id].art = true;
-    const imgStyle = `position:absolute;bottom:0;${side}:40px;height:${charH}px;object-fit:contain`;
+    const imgStyle = `position:absolute;bottom:0;${side}:${charInset}px;height:${charH}px;object-fit:contain`;
     clips.push(clip(
       `<img src="images/${id}/mouth_close.png" style="${imgStyle}" />`,
       { start: 0, dur: total, track: 10, z: 10 },
@@ -370,7 +388,7 @@ for (const id of Object.keys(chars)) {
       }
     }
   } else {
-    const posCss = side === "left" ? "left:40px" : "right:40px";
+    const posCss = side === "left" ? `left:${charInset}px` : `right:${charInset}px`;
     clips.push(clip(
       `<div style="position:absolute;bottom:0;${posCss};width:200px;height:300px;background:${color}20;border:4px solid ${color};border-radius:16px;display:flex;align-items:center;justify-content:center"><span style="font-weight:bold;color:${color};font-size:24px">${esc(c.name)}</span></div>`,
       { start: 0, dur: total, track: 10, z: 10 },
@@ -414,16 +432,17 @@ for (const seg of timeline) {
   if (v && v.type === "terminal") {
     if (!v.command) die(`script id ${line.id}: terminal visual needs a command`);
     const outs = Array.isArray(v.output) ? v.output : [];
-    const termFs = 34;
-    const outFs = 30;
-    const innerW = W * 0.76 - 56;
+    const termFs = portrait ? 40 : 34;
+    const outFs = portrait ? 34 : 30;
+    const termW = portrait ? 0.88 : 0.76;
+    const innerW = W * termW - 56;
     const charsPerLine = Math.max(20, Math.floor(innerW / (termFs * 0.62)));
     const cmdLines = Math.max(1, Math.ceil(v.command.length / charsPerLine));
     const minH = 30 + Math.round((cmdLines + outs.length) * termFs * 1.7);
     idSeq += 1;
     const cmdId = `cmd-${idSeq}`;
     let inner =
-      `<div style="position:absolute;top:12%;left:50%;transform:translateX(-50%);width:76%;background:#161B22;border:2px solid #30363D;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden">` +
+      `<div style="position:absolute;top:${portrait ? 14 : 12}%;left:50%;transform:translateX(-50%);width:${Math.round(termW * 100)}%;background:#161B22;border:2px solid #30363D;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden">` +
       `<div style="background:#21262D;padding:10px 16px;display:flex;gap:9px;align-items:center">` +
       `<span style="width:13px;height:13px;border-radius:50%;background:#FF5F56"></span>` +
       `<span style="width:13px;height:13px;border-radius:50%;background:#FFBD2E"></span>` +
@@ -462,14 +481,33 @@ for (const seg of timeline) {
     const vidWork = path.join(workDir, v.src);
     fs.mkdirSync(path.dirname(vidWork), { recursive: true });
     fs.copyFileSync(vidAbs, vidWork);
-    const vidW = v.width ?? Math.round(W * 0.45);
+    const vidW = v.width ?? Math.round(W * (portrait ? 0.62 : 0.45));
     const mutedAttr = v.muted === false ? "" : " muted";
-    idSeq += 1;
-    clips.push(`    <video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${vidW}px;max-width:88%;max-height:82%;object-fit:contain;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,0.45)" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video>`);
+    // Frame treatment (owner ruling): embeds never float bare on the
+    // scene. The render engine swaps <video> for an injected frame
+    // image and does not carry element borders onto it, so the frame
+    // lives on a card div wrapping the video: plain DOM chrome renders
+    // through the screenshot path and stays glued to the video box.
+    // frame: false only for genuinely full-bleed embeds.
+    const ring = v.frame === false ? 0 : 6;
+    const frameCss = ring
+      ? `border:${ring}px solid rgba(255,255,255,0.92);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.45);background:#0B1220;overflow:hidden;`
+      : "";
+    const [fw, fh] = probeDims(vidWork);
+    const cardW = vidW + 2 * ring;
+    const cardH = Math.round((vidW * fh) / fw) + 2 * ring;
+    const cardX0 = Math.round(W / 2 - cardW / 2);
+    const cardY0 = Math.round(0.47 * H - cardH / 2);
+    embeds.push({ id: `line-${line.id}`, box: [cardX0, cardY0, cardX0 + cardW, cardY0 + cardH] });
+    clips.push(clip(
+      `<div style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${cardW}px;${frameCss}">` +
+      `<video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="display:block;width:100%;object-fit:contain" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video></div>`,
+      { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 6, z: 6 },
+    ));
     console.log(`[map-project] video inset: line ${line.id} shows ${v.src} (${probeSeconds(vidWork).toFixed(2)}s source)`);
   } else if (v && v.type === "text" && v.text) {
     const vs = v.font_size || 84;
-    const cardStyle = `position:absolute;inset:0 0 25% 0;display:flex;align-items:center;justify-content:center;font-family:'${fontFamily}',sans-serif;font-size:${vs}px;font-weight:bold;color:${v.color || "#ffffff"};-webkit-text-stroke:${Math.round(vs * 0.16)}px ${v.outline_color || "#1F2937"};paint-order:stroke fill;text-align:center;white-space:pre-wrap;text-wrap:balance`;
+    const cardStyle = `position:absolute;${portrait ? "inset:8% 8% 60% 0" : "inset:0 0 25% 0"};display:flex;align-items:center;justify-content:center;font-family:'${fontFamily}',sans-serif;font-size:${vs}px;font-weight:bold;color:${v.color || "#ffffff"};-webkit-text-stroke:${Math.round(vs * 0.16)}px ${v.outline_color || "#1F2937"};paint-order:stroke fill;text-align:center;white-space:pre-wrap;text-wrap:balance`;
     clips.push(clip(`<div style="${cardStyle}">${esc(v.text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
   }
 }
@@ -513,6 +551,18 @@ fs.writeFileSync(path.join(workDir, "expected-seconds.txt"), String(total));
 fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({
   lines: timeline.map((s) => ({ id: s.line.id, start: +s.start.toFixed(3), end: +s.end.toFixed(3) })),
   total,
+  // Declared layout (same shape as the remotion vendor): the subtitle
+  // band after the overlap lift (portrait raises it above the
+  // characters) plus the character corner boxes, so the platform lint
+  // probes the band the composition actually draws.
+  layout: {
+    subtitle_band: [subX0, subY0, subX1, subY0 + subH].map(Math.round),
+    characters: Object.entries(chars).map(([id], i) => ({
+      id,
+      box: [charBoxes[i].x0, charBoxes[i].y0, charBoxes[i].x1, charBoxes[i].y1].map(Math.round),
+    })),
+    embeds,
+  },
 }));
 console.log(`[map-project] characters: ${Object.keys(chars).join(", ")}`);
 console.log(`[map-project] lines: ${script.length}, total: ${total}s`);

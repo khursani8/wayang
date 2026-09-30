@@ -1,9 +1,9 @@
 # campaign resume (2026-09-30)
 
 ## Newest closed season
-- s8: completed, verdict WIN, implies: s9
-- harvest record: /mnt/data/work/wayang/.rumpun/ledger/2026-09-30_s8-harvest.md
-- evidence: /mnt/data/work/wayang/.rumpun/runs/s8/results.jsonl
+- s9: completed in-session, verdict WIN, implies: s10
+- closure: ledger seq 10 (in-session lane, spawn defect documented in the s8 harvest)
+- evidence: /mnt/data/work/wayang/.rumpun/runs/s9/ (rubric.md, cycles.md, probe-report.txt)
 
 ## Running
 - nothing running

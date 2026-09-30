@@ -24,7 +24,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 - PyPI: name `wayang` verified available; wheel + sdist built in dist/
   (gitignored); upload is one command away with the owner's token:
   `uv publish dist/*`.
-- Live projects (2026-09-29): video-anda (65.8s full tutorial, verified) and wayang-tutorial (project.yaml + shorts plan restored from the session record; voices and render need a re-run with credits). The other 8 demo projects were deleted 2026-09-29 by a same-path rm mistake and are not recoverable.
+- Live projects (2026-09-30): video-anda only (62.5s recursive full tutorial, lip synced, audio+1s pacing). wayang-tutorial was retired by operator decision and the s7 shorts plan re-pointed at video-anda. The other 8 demo projects were deleted 2026-09-29 by a same-path rm mistake and are not recoverable.
 - Season plan s2-s6: ALL resolved. Ledger: .rumpun/ (append-only;
   directives stay "pending" as historical records — closures are
   appended as new entries).

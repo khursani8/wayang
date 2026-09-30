@@ -11,6 +11,7 @@ import stat
 import string
 import subprocess
 import sys
+import time
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as pkg_version
 from pathlib import Path
@@ -20,6 +21,7 @@ from jsonschema import Draft202012Validator
 
 from wayang import lipsync
 from wayang import paths
+from wayang import render_cache
 from wayang.project import (
     deep_merge,
     find_series_file,
@@ -900,7 +902,8 @@ def cmd_lint(args):
     lint_project(pdir, mp4, data)
 
 
-def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False, language: str | None = None) -> None:
+def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False, language: str | None = None,
+               no_cache: bool = False) -> None:
     data = validate_project(pdir)
     # The vendor consumes one canonical file. When series inheritance applied,
     # materialize the merged doc so the vendor never needs to know about series.
@@ -950,14 +953,25 @@ def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False, languag
         (pdir / ".merged.yaml").write_text(
             yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"
         )
-    log.info("rendering via vendor '%s' (language: %s)", vendor, language or "primary")
-    draft_env = dict(os.environ)
-    if draft:
-        draft_env["WAYANG_DRAFT"] = "1"
-    proc = subprocess.run(["bash", str(build), str(pdir), str(out)], check=False, env=draft_env)
-    if proc.returncode != 0:
-        fail(f"vendor build.sh exited {proc.returncode}")
-    log.info("done: %s", out / "video.mp4")
+    # Segment cache: splice re-renders only changed lines when the vendor
+    # can range-render; every inconsistency falls back to this full render.
+    inc: dict | None = None
+    if no_cache and not draft and language is None:
+        log.info("render cache: --no-cache - forcing a full render")
+    elif not draft and language is None:
+        inc = render_cache.try_incremental(pdir, data, _vendor_capabilities(vendor), build)
+    full_seconds: float | None = None
+    if inc is None:
+        log.info("rendering via vendor '%s' (language: %s)", vendor, language or "primary")
+        draft_env = dict(os.environ)
+        if draft:
+            draft_env["WAYANG_DRAFT"] = "1"
+        t0 = time.monotonic()
+        proc = subprocess.run(["bash", str(build), str(pdir), str(out)], check=False, env=draft_env)
+        full_seconds = time.monotonic() - t0
+        if proc.returncode != 0:
+            fail(f"vendor build.sh exited {proc.returncode}")
+        log.info("done: %s", out / "video.mp4")
     duration_guard(out, vendor)
     final_mp4 = out / "video.mp4"
     if language:
@@ -966,6 +980,13 @@ def render_one(pdir: Path, skip_lint: bool = False, draft: bool = False, languag
         log.info("language variant: %s", final_mp4)
     if not skip_lint:
         lint_project(pdir, final_mp4, data)
+    # Cache write happens only after guards passed; a failed render keeps the
+    # previous cache. Draft and language variants never update it.
+    if not draft and language is None:
+        try:
+            render_cache.record(pdir, data, full_seconds, inc)
+        except Exception:
+            log.exception("render cache: write failed (next render falls back to a full render)")
 
 
 def cmd_render(args):
@@ -976,7 +997,8 @@ def cmd_render(args):
             "series: %d episode(s): %s", len(targets), ", ".join(t.name for t in targets)
         )
     for ep in targets:
-        render_one(ep, skip_lint=args.skip_lint, draft=args.draft, language=args.language)
+        render_one(ep, skip_lint=args.skip_lint, draft=args.draft, language=args.language,
+                   no_cache=args.no_cache)
 
 
 def cmd_shorts_sample(args):
@@ -1107,6 +1129,7 @@ def main():
     p.add_argument("--skip-lint", action="store_true", help="skip the post-render visibility lint")
     p.add_argument("--draft", action="store_true", help="fast low-quality preview render")
     p.add_argument("--language", help="render a translated variant (uses translations + per-language voices)")
+    p.add_argument("--no-cache", action="store_true", help="force a full render, ignoring the render cache")
     p.set_defaults(func=cmd_render)
     p = sub.add_parser("presets", help="list geometry presets (used by init --preset)")
     p.set_defaults(func=cmd_presets)

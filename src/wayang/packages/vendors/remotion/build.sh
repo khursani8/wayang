@@ -39,21 +39,37 @@ fi
 # Canonical YAML -> engine configs + estimate durations + silent placeholder wavs
 node "$VENDOR_DIR/scripts/map-project.mjs" "$PROJECT_DIR" "$WORK"
 
-# Generate engine sources from the mapped configs
-(cd "$WORK" && npm run sync)
-
+# Incremental-render modes (see docs/vendor-contract.md):
+#   WAYANG_PLAN_ONLY=1        map only; write timeline/expected, render nothing
+#   WAYANG_RENDER_FRAMES=A-B  render frames A..B (inclusive) to span.mp4
 DRAFT_FLAGS=""
 if [ "${WAYANG_DRAFT:-0}" = "1" ]; then
   DRAFT_FLAGS="--scale=0.5"
   echo "[remotion-vendor] draft mode: --scale=0.5"
 fi
-echo "[remotion-vendor] rendering..."
-(cd "$WORK" && npx remotion render src/index.ts Main out/video.mp4 $DRAFT_FLAGS)
+RANGE_FLAGS=""
+OUT_NAME="video.mp4"
+if [ -n "${WAYANG_RENDER_FRAMES:-}" ]; then
+  RANGE_FLAGS="--frames=${WAYANG_RENDER_FRAMES}"
+  OUT_NAME="span.mp4"
+  echo "[remotion-vendor] span mode: frames ${WAYANG_RENDER_FRAMES} -> ${OUT_NAME}"
+fi
+
+if [ "${WAYANG_PLAN_ONLY:-0}" = "1" ]; then
+  echo "[remotion-vendor] plan-only: mapped timeline, no render"
+else
+  # Generate engine sources from the mapped configs
+  (cd "$WORK" && npm run sync)
+  echo "[remotion-vendor] rendering..."
+  (cd "$WORK" && npx remotion render src/index.ts Main "out/$OUT_NAME" $DRAFT_FLAGS $RANGE_FLAGS)
+  cp "$WORK/out/$OUT_NAME" "$OUT_DIR/$OUT_NAME"
+fi
 
 # The duration guard is platform-owned: OUT_DIR carries expected-seconds.txt;
 # tools/wayang.py compares it against the render after this script exits.
+# Both plan-only and span modes emit the full-project timeline: the mapper
+# computes it from the voice manifest, independent of the rendered range.
 cp "$WORK/expected-seconds.txt" "$OUT_DIR/expected-seconds.txt"
 
 cp "$WORK/timeline.json" "$OUT_DIR/timeline.json"
-cp "$WORK/out/video.mp4" "$OUT_DIR/video.mp4"
-echo "[remotion-vendor] wrote $OUT_DIR/video.mp4"
+echo "[remotion-vendor] wrote $OUT_DIR/$OUT_NAME + timeline.json"

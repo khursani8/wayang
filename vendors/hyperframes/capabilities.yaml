@@ -10,4 +10,8 @@ supported:
   language_variants: true
   playback_rate: true
   lip_sync: true
-degraded: {}
+degraded:
+  incremental_render: >-
+    render v0.8.96 has no frame-range flag; --resume only survives
+    unchanged compositions (segment hash covers the whole compiled HTML),
+    so every render is a full render

@@ -10,6 +10,7 @@ supported:
   translations: true
   language_variants: true
   lip_sync: true
+  range_render: true        # WAYANG_RENDER_FRAMES=A-B renders an inclusive frame span
 degraded:
   terminal: rendered as a command text card
   scene: parsed, no visual effect

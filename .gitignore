@@ -11,3 +11,4 @@ __pycache__/
 .omc/
 dist/
 .dashboard/
+.rumpun/

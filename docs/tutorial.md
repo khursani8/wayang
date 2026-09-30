@@ -13,15 +13,14 @@ MP4 with voices, subtitles, and a character on screen.
   still renders, with silent audio and estimated timing (labeled in the
   build log).
 
-All commands run from the repo root.
+All commands run from the repo root. The installed CLI works anywhere too: `uv tool install git+https://github.com/khursani8/wayang`, then drop the `uv run tools/` prefix.
 
 ## 1. Pick a template
 
     uv run tools/wayang.py templates
 
 Formats: `dialog` (two hosts banter), `presentation` (one presenter with
-big cards), `storytelling` (narrative + emotions), `community`
-(announcements). Every template renders as-is before you change a thing.
+big cards), `storytelling` (narrative + emotions), `community` (announcements), `tutorial` (terminal walkthroughs), `shorts` (vertical 1080x1920). Every template renders as-is before you change a thing.
 
 ## 2. Create your project
 

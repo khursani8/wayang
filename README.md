@@ -1,68 +1,78 @@
 # Wayang
 
-Framework-agnostic video template platform: fill one YAML, get a video.
+Fill one YAML file, get a narrated video: mascots, voices, subtitles,
+music, themed backgrounds. Two render engines behind one contract.
 
-- Templates are named by format: `dialog` (two-host banter), `presentation`
-  (one presenter + big cards), `storytelling` (narrative + emotions),
-  `community` (announcements).
-- Shipped mascots: Momo the tapir and Kiki the hornbill, with Bahasa
-  Malaysia sample scripts and Revolab voices. How the art is made and how
-  to make your own (image models included): `docs/mascot-art.md`.
-- Backgrounds are synthesized themes (chalkboard, whiteboard, night-sky,
-  kraft-paper, batik, notebook, sunrise, studio, riverbank, slate,
-  wood-table). Pick one with `settings.background`; or drop your own
-  `assets/background.png` into the project.
-- Video engines live under `vendors/<engine>/` (remotion, hyperframes),
-  each with an AGENTS.md
-  manual and a `build.sh PROJECT_DIR OUT_DIR` entry. The platform contract
-  is the root `AGENTS.md`.
+- Templates by format: `dialog` (two hosts), `presentation` (one
+  presenter, big cards), `storytelling` (narrative + emotions),
+  `community` (announcements), `tutorial` (terminal walkthroughs),
+  `shorts` (native vertical 1080x1920).
+- Mascots: Momo the tapir and Kiki the hornbill, lip-synced from the
+  voice audio frame by frame. Rimau the tiger shows how to add your own
+  character (`docs/mascot-art.md`).
+- Voices: Revolab (default) or OpenAI, one wav per line, cached per line
+  text so rerenders only spend on changed lines.
+- Backgrounds: 11 synthesized themes (chalkboard, batik, night-sky,
+  studio, kraft-paper, ...) or your own PNG.
+- Verticals: `wayang shorts-render --rerender` renders shorts natively
+  from the `shorts` template. No crops.
 
-New here? Follow `docs/tutorial.md` - from clone to your first MP4 in
-seven steps.
+## Install
 
-## Requirements
+    uv tool install git+https://github.com/khursani8/wayang
+    wayang setup        # one-time: deploys render engines to ~/.wayang
+    wayang doctor       # verifies the environment
 
-- Node 24 + npm (rendering), uv (CLI), ffmpeg/ffprobe (duration guard).
-- First time only: `npm install` inside `vendors/remotion/engine`.
-- A TTS key for real voices: `REVOLAB_API_KEY` (shipped config) or
-  `OPENAI_API_KEY`. Without a key, builds fall back to estimated timing
-  with silent audio, labeled in the log.
+Requires Node 24+ (rendering), uv, and ffmpeg/ffprobe. From a repo
+clone, prefix every command with `uv run tools/` instead
+(`uv run tools/wayang.py templates`).
 
 ## Quickstart
 
-    uv run tools/wayang.py templates
-    uv run tools/wayang.py init dialog my-video
+    wayang templates
+    wayang init tutorial my-video
     # edit projects/my-video/project.yaml (characters, script, settings)
-    uv run tools/wayang.py check projects/my-video      # what to fill, in plain words
-    uv run tools/wayang.py validate projects/my-video
-    REVOLAB_API_KEY=... uv run tools/wayang.py render projects/my-video
+    wayang check projects/my-video      # what to fill, in plain words
+    wayang render projects/my-video     # add REVOLAB_API_KEY for real voices
 
-Output: `projects/<name>/out/video.mp4`.
+Output: `projects/my-video/out/video.mp4`. Extras: `wayang captions`
+(srt + vtt), `wayang chapters` (YouTube chapter stamps),
+`wayang sheet` (contact sheet), `wayang voices` (audition the catalog),
+`wayang init --wizard` (answers in, project.yaml out).
+
+## Shorts
+
+    wayang shorts-sample projects/my-video
+    # an agent session reads shorts/brief and writes shorts/plan.yaml
+    wayang shorts-render projects/my-video --rerender
+
+Windows and titles come from the plan; the picture comes from a native
+1080x1920 render dressed in the `shorts` template. See
+`docs/shorts.md`.
 
 ## TTS
 
-The repo owns no services. TTS engines are API clients you configure:
-`revolab` (needs REVOLAB_API_KEY; default model nada-1.0-pro, voice ids
-from GET /v1/voices) and `openai` (needs OPENAI_API_KEY). `wayang.py tts` writes one wav per script line into
-`projects/<name>/voices/`; renders reuse cached lines, prefer those files,
-then estimates. New engines: add a provider class in
-`tools/tts_providers.py` plus the schema enum.
+The repo owns no services. Voices are API clients configured per
+character: `revolab` (REVOLAB_API_KEY) or `openai` (OPENAI_API_KEY).
+Without a key, renders fall back to estimated timing with silent audio,
+labeled in the log. New providers: a class in
+`src/wayang/tts_providers.py` plus the schema enum.
 
 ## Series
 
-    uv run tools/wayang.py init-series my-series --template dialog
+    wayang init-series my-series --template dialog
 
-creates `projects/my-series/series.yaml` (shared characters and settings)
-plus the first episode. Episodes inherit from series.yaml and override per
-key. Render every episode in order with
-`uv run tools/wayang.py render projects/my-series`.
+`series.yaml` is the shared base; episodes deep-merge it (episode wins
+per key). `wayang render projects/my-series` renders every episode in
+order.
 
 ## How a render runs
 
-`wayang.py` validates the project against `schema/project.schema.json`,
-generates cached voices, then dispatches to the vendor's `build.sh`, which
-maps the YAML to engine inputs and renders. The build log labels the audio
-source, and a duration guard fails the build if the rendered length drifts
-from the computed timeline, and a visibility lint extracts frames to
-confirm every subtitle, card, character and voice is actually present. Details in `AGENTS.md` (agents) and
-`vendors/remotion/AGENTS.md` (the remotion engine).
+The project validates against `schema/project.schema.json`, voices come
+from cache, the vendor's `build.sh` renders, then two guards run on the
+real output: a duration guard (rendered length vs the computed timeline)
+and a visibility lint (frames probed per line: subtitle present,
+character present, voice audible, mouth actually moving). Details:
+`AGENTS.md` (agent manual), `docs/tutorial.md` (beginners),
+`docs/project-yaml.md` (YAML reference), `docs/vendor-contract.md`
+(join as an engine).

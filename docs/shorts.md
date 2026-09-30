@@ -1,14 +1,15 @@
-# Shorts suggester
+# Shorts
 
-Turn one rendered landscape video into vertical shorts: sample it into a
-brief, let an agent session pick moments, cut the clips.
+Vertical 1080x1920 clips from a rendered project. Shorts are re-rendered
+natively from the dedicated `shorts` template — the picture is never
+cropped out of the landscape master.
 
 ## Pipeline
 
-    wayang shorts-sample <project>          # 1. sample -> brief dir
-    <agent session reads the brief>         # 2. analysis (agent, not CLI)
-    <agent writes shorts/plan.yaml>         #    clip windows, crops, titles
-    wayang shorts-render <project>          # 3. cut + verify clips
+    wayang shorts-sample <project>             # 1. sample -> brief dir
+    <agent session reads the brief>            # 2. analysis (agent, not CLI)
+    <agent writes shorts/plan.yaml>            # 3. clip windows + titles
+    wayang shorts-render <project> --rerender  # 4. native render + verify
 
 ## 1. shorts-sample
 
@@ -29,32 +30,45 @@ the source is a Wayang render (exact per-line speech windows). Write
 `<project>/shorts/plan.yaml`:
 
     source: /abs/path/to/video.mp4
+    mode: rerender
     clips:
       - id: intro-hook
-        title: "Dari kosong ke video siap!"
+        title: "Satu YAML, satu video penuh!"
         start: 0.0
-        end: 5.146
-        crop: [x0, y0, x1, y1]     # portrait box in source pixels
+        end: 5.1
         render: {width: 1080, height: 1920}
 
 Validation (shorts-render rejects the plan otherwise): window inside the
-source, crop inside the frame and portrait (height > width), title
-non-empty, render size positive and even.
+source, title non-empty, render size positive and even. `crop` is
+optional and ignored in rerender mode (still required for the legacy
+crop path).
 
-## 3. shorts-render
+## 3. shorts-render --rerender
 
-    wayang shorts-render projects/my-video [--clip intro-hook] [--force]
+Builds `shorts/portrait-master/`: the parent's script text, line ids,
+characters, voices, and timing stay verbatim; the layout comes from the
+`shorts` template (hook cards upper third, large subtitle zone, vertical
+character slot). The master renders through the project's vendor (cached
+voices, no TTS spend), then each plan window is trimmed into
+`<project>/shorts/clips/<id>/clip.mp4` and verified with real probes:
+ffprobe dimensions + duration (0.5s tolerance) and frame extracts at
+10% / 50% / 90%. Results live in each clip dir as verify.json (with
+`"mode": "rerender"` and the master path) + probe-*.png. Verified clips
+are cached; `--force` re-renders; `--clip <id>` limits the run.
 
-Cuts each clip (crop -> scale -> libx264 + aac, faststart) into
-`<project>/shorts/clips/<id>/clip.mp4` and verifies every render with
-real probes on disk: ffprobe dimensions + duration (0.5s tolerance) and
-frame extracts at 10% / 50% / 90% of the clip. Results live in each
-clip dir as verify.json + probe-*.png. Verified clips are cached;
-`--force` re-renders.
+The lint on the master carries the same gates as any render, including
+the mouth gate (lip sync) and the subtitle band check.
 
-## Crop geometry note
+## Embeds
 
-A 9:16 crop from 1080p is at most 608px wide. Wide center cards and the
-1056px subtitle band clip at the edges; content parked in the frame
-corners (mascots) cannot share the window with centered content. Plan
-crops around the dominant element, or render the source portrait-first.
+A script line with `visual: {type: video, src: ...}` shows real footage
+inside the render as a framed card (border, rounded corners, shadow) —
+video-in-video is always framed, never a floating inset. The embed box
+is declared in timeline.json and probed by the lint.
+
+## Legacy crop path
+
+`shorts-render` without `--rerender` cuts the plan windows out of the
+landscape master through `crop: [x0, y0, x1, y1]` boxes. A 9:16 crop
+from 1080p is at most 608px wide: wide cards and the subtitle band clip
+at the edges. Kept for old plans; new plans should use `--rerender`.

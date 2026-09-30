@@ -14,7 +14,7 @@ Bahasa Malaysia content.
     templates/<format>/          working skeletons: template.yaml + art
     vendors/<engine>/            AGENTS.md (deltas) + build.sh + mapper
     tools/wayang.py                  templates|init|init-series|check|validate|
-                                 tts|render|lint
+                                 tts|render|lint|captions|chapters|sheet|voices|stats|shorts-sample|shorts-render|setup|doctor
     projects/<name>/             your filled YAML + assets (gitignored)
     assets/                      art generator sources (mascots, backgrounds)
 

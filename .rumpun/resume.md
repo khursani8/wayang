@@ -1,9 +1,9 @@
-# campaign resume (2026-09-29)
+# campaign resume (2026-09-30)
 
 ## Newest closed season
-- s7: completed, verdict WIN, implies: s8
-- harvest record: /mnt/data/work/wayang/.rumpun/ledger/2026-09-29_s7-harvest.md
-- evidence: /mnt/data/work/wayang/.rumpun/runs/s7/results.jsonl
+- s8: completed, verdict WIN, implies: s9
+- harvest record: /mnt/data/work/wayang/.rumpun/ledger/2026-09-30_s8-harvest.md
+- evidence: /mnt/data/work/wayang/.rumpun/runs/s8/results.jsonl
 
 ## Running
 - nothing running

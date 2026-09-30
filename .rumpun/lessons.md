@@ -2,3 +2,4 @@
 - s3 WIN: s4
 - s5 WIN: s6
 - s7 WIN: s8
+- s8 WIN: s9

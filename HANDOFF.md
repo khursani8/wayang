@@ -13,7 +13,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
 
 ## Current state (verified 2026-09-29)
 
-- Repo: github.com/khursani8/wayang, private, branch main, clean tree,
+^- Repo: github.com/khursani8/wayang, PUBLIC since 2026-09-30 (history secret-scanned before publishing; the accepted old-commit-message blemish stands), branch main, clean tree,
   HEAD. Local checkout: /mnt/data/work/wayang, the only checkout.
   /home/sani/work/wayang is the same directory (same inode via the
   /home/sani/work link); never rm projects/ through the second path.
@@ -121,7 +121,7 @@ owner speaks Bahasa Malaysia + English and wants plain, verified answers.
    (owner decided to leave it).
 
 8. Shorts 9:16 crop from a 1080p source is at most 608px wide; the subtitle band and wide cards clip at the edges. Next: pad-and-blur or subtitle re-layout inside shorts-render.
-9. Installed-CLI packaging: the wheel ships without package data (mascots frames, templates, schema), so wayang init fails on an installed CLI outside a repo checkout. Draft issue exists; fix is a pyproject package-data mapping.
+9. RESOLVED 2026-09-30: installed-CLI packaging fixed by tools/sync-packages.py (refreshes src/wayang/packages from the live tree; run it before building wheels). uv tool install works from the repo path and from the public git URL.
 ## Next steps (the queue)
 
 1. Pending operator directive 8 (rumpun ledger): an agent that

@@ -90,6 +90,20 @@
               "type": "number",
               "minimum": 0.5,
               "maximum": 3
+            },
+            "tone": {
+              "type": "string",
+              "enum": [
+                "cinematic",
+                "playful",
+                "calm",
+                "energetic"
+              ]
+            },
+            "duration": {
+              "type": "number",
+              "minimum": 10,
+              "maximum": 600
             }
           }
         },
@@ -193,6 +207,51 @@
               "minimum": 0,
               "maximum": 1
             }
+          }
+        },
+        "title_card": {
+          "type": "object",
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "sub": {
+              "type": "string"
+            }
+          }
+        },
+        "closing_card": {
+          "type": "object",
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "sub": {
+              "type": "string"
+            }
+          }
+        },
+        "scenes": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[0-9]+$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "pronunciations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         }
       }
@@ -367,7 +426,8 @@
                 "text",
                 "image",
                 "none",
-                "terminal"
+                "terminal",
+                "video"
               ]
             },
             "text": {
@@ -378,6 +438,16 @@
             },
             "font_size": {
               "type": "number"
+            },
+            "width": {
+              "type": "number",
+              "minimum": 16
+            },
+            "muted": {
+              "type": "boolean"
+            },
+            "frame": {
+              "type": "boolean"
             },
             "color": {
               "type": "string"
@@ -421,6 +491,23 @@
               "then": {
                 "required": [
                   "command"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "video"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "required": [
+                  "src"
                 ]
               }
             }

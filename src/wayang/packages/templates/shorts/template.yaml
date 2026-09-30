@@ -1,0 +1,99 @@
+# =============================================================
+# shorts template - vertical-first 1080x1920 for YouTube Shorts
+# (vendor: hyperframes). Own layout language: hook card in the
+# upper third, big subtitles in the lower third, mascot slot
+# mid-lower, narrow stacked cards, framed video embeds.
+# Works as-is after init. TTS: Revolab voices (set REVOLAB_API_KEY);
+# without a key the render falls back to estimated timing and
+# silent audio, labeled in the log.
+# =============================================================
+meta:
+  title: "Shorts Wayang"
+  template: shorts
+  vendor: hyperframes
+  language: ms
+  description: "templat menegak 1080x1920: kad hook atas, sari kata besar bawah"
+
+characters:
+  momo:
+    name: Momo
+    color: "#37474F"
+    position: right
+    voice:
+      engine: revolab
+      voice_id: paan-f695215e
+      languages:
+        en:
+          voice_id: ahmad-642668a6
+
+script:
+  - id: 1
+    character: momo
+    text: "Video menegak? Mulakan di sini!"
+    translations:
+      en: "Vertical video? Start here!"
+    scene: 1
+    pause_after: 1.0
+    visual:
+      type: text
+      text: "Wayang Shorts"
+      font_size: 96
+      color: "#ffffff"
+      animation: zoomIn
+  - id: 2
+    character: momo
+    text: "Satu arahan, projek Shorts siap."
+    translations:
+      en: "One command, Shorts project ready."
+    scene: 1
+    pause_after: 1.0
+    visual:
+      type: terminal
+      command: "wayang init shorts video-saya"
+      output:
+        - "created projects/video-saya"
+  - id: 3
+    character: momo
+    text: "Tulis skrip, jana suara, render menegak."
+    translations:
+      en: "Write the script, synthesize voices, render vertical."
+    scene: 1
+    pause_after: 1.0
+    visual:
+      type: terminal
+      command: "wayang render projects/video-saya"
+      output:
+        - "done: out/video.mp4"
+  - id: 4
+    character: momo
+    text: "Potong tetingkap mana-mana baris untuk short."
+    translations:
+      en: "Cut any line window into a short."
+    scene: 1
+    pause_after: 1.0
+    visual:
+      type: text
+      text: "1080 x 1920"
+      font_size: 84
+      color: "#ffffff"
+      animation: bounce
+
+settings:
+  video:
+    width: 1080
+    height: 1920
+    fps: 30
+  background: slate
+  font:
+    family: "M PLUS Rounded 1c"
+    size: 72
+    weight: "900"
+    color: "#ffffff"
+  subtitle:
+    secondary_language: en
+    bottom_offset: 40
+    max_width_percent: 86
+    outline_width: 14
+  character:
+    height: 380
+    use_images: true

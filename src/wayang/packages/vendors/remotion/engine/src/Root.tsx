@@ -9,13 +9,18 @@ import { SETTINGS } from "./settings.generated";
 // raw frames leaves an empty tail whenever rate > 1 (Main advances in
 // adjusted frames). The first line starts at frame 0, so no opening buffer.
 const playbackRate = SETTINGS.video.playbackRate ?? 1;
+const fps = SETTINGS.video.fps ?? 30;
 const adjusted = (frames: number) => Math.ceil(frames / playbackRate);
+// Opening/closing cards: title 3s, closing 2.5s, else the 60-frame buffer.
+// Must match Main.tsx exactly (both read the generated settings).
+const openingFrames = SETTINGS.titleCard ? Math.round(3 * fps) : 0;
+const closingFrames = SETTINGS.closingCard ? Math.round(2.5 * fps) : 60;
 const calculateTotalFrames = () => {
-  let total = 0;
+  let total = openingFrames;
   for (const line of scriptData) {
     total += adjusted(line.durationInFrames) + adjusted(line.pauseAfter);
   }
-  total += 60; // closing buffer
+  total += closingFrames;
   return total;
 };
 

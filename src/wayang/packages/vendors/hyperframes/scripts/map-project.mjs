@@ -63,6 +63,9 @@ const playbackRate = settings.video?.playback_rate ?? 1;
 const fps = settings.video?.fps ?? 30;
 const W = settings.video?.width ?? 1920;
 const H = settings.video?.height ?? 1080;
+// Portrait (shorts) compositions stack instead of spreading: cards go
+// narrow with wide margins, type grows, embeds carry a frame.
+const portrait = H > W;
 
 for (const k of Object.keys(vendorCfg)) {
   if (!["estimate_cps"].includes(k)) {
@@ -71,9 +74,6 @@ for (const k of Object.keys(vendorCfg)) {
 }
 if (settings.background !== undefined && typeof settings.background !== "string") {
   die("settings.background must be a theme name string");
-}
-for (const line of script) {
-
 }
 
 // ---- voices: platform manifest or estimates (never mixed) ----
@@ -123,17 +123,21 @@ function silentWav(seconds) {
   return buf;
 }
 
+const TONES = { cinematic: 1.5, playful: 0.85, calm: 1.25, energetic: 0.8 };
+const toneFactor = TONES[settings.tone] ?? 1;
+const targetDuration = settings.duration;
 const pauseOf = (line) => (line.pause_after ?? 0.5);
+const openingDur = settings.title_card ? 3 : 0;
 
 // ---- timeline ----
-let t = 0;
+let t = openingDur;
 const timeline = [];
 for (const line of script) {
   const file = `${String(line.id).padStart(2, "0")}_${line.character}.wav`;
   const raw = voiceSeconds ? voiceSeconds[file] : Math.max(0.8, String(line.text).replace(/\s+/g, "").length / cps);
   const dur = raw / playbackRate;
   const pause = pauseOf(line);
-  timeline.push({ line, file, start: t, dur, end: t + dur, subEnd: t + dur + pause / playbackRate });
+  timeline.push({ line, file, start: t, dur, end: t + dur, pause, subEnd: t + dur + pause / playbackRate });
   t += dur + pause / playbackRate;
 }
 // Write silent placeholder wavs on the estimate path so audio sources exist.
@@ -145,7 +149,24 @@ if (voiceSeconds === null) {
   }
 }
 
-const total = +(t + 2).toFixed(3);
+const closingDur = settings.closing_card ? 2.5 : 0;
+// target duration: rescale the pause budget so the total lands on it
+const voiceWall = timeline.reduce((s, seg) => s + seg.dur, 0);
+const pauseWall = timeline.reduce((s, seg) => s + (seg.pause ?? 0) / playbackRate, 0);
+const tail = 1 + (settings.title_card ? 3 : 0) + (settings.closing_card ? 2.5 : 0);
+let pauseScale = 1;
+if (targetDuration && pauseWall > 0) {
+  pauseScale = Math.min(2.5, Math.max(0.3, (targetDuration - tail - voiceWall) / pauseWall));
+}
+let cursor = (settings.title_card ? 3 : 0);
+for (const seg of timeline) {
+  seg.start = cursor;
+  seg.dur = seg.dur;
+  seg.end = cursor + seg.dur + seg.pause / playbackRate * pauseScale;
+  seg.subEnd = seg.end;
+  cursor = seg.end;
+}
+const total = +(cursor + 1).toFixed(3);
 
 // ---- background: project custom > named theme > engine default (riverbank) ----
 const repoRoot = path.resolve(workDir, "..", "..", "..", "..");
@@ -177,6 +198,21 @@ if (fs.existsSync(path.join(projectDir, "assets", "images"))) {
   fs.cpSync(path.join(projectDir, "assets", "images"), path.join(workDir, "images"), { recursive: true });
 }
 
+// ---- lipsync schedule (optional): audio-driven mouth windows ----
+// voices/lipsync.json: { fps, lines: { wav-stem: [[open_start, open_end], ...] } }
+// with seconds relative to the voice start. Absent on draft/estimate renders;
+// the fixed 0.2s mouth clock stays the fallback.
+let lipsyncLines = null;
+const lipsyncPath = path.join(workDir, "voices", "lipsync.json");
+if (fs.existsSync(lipsyncPath)) {
+  try {
+    lipsyncLines = JSON.parse(fs.readFileSync(lipsyncPath, "utf8")).lines || null;
+  } catch {
+    lipsyncLines = null;
+  }
+  if (lipsyncLines) console.log("[map-project] lipsync: audio-driven mouth (voices/lipsync.json present)");
+}
+
 // ---- font: download the requested Google font for @font-face ----
 const font = settings.font || {};
 const fontFamily = font.family || "Inter";
@@ -206,6 +242,7 @@ try {
 
 // ---- geometry + overlap detection ----
 const charH = settings.character?.height ?? 275;
+const charInset = portrait ? 56 : 40;
 const subWidthPct = settings.subtitle?.max_width_percent ?? 55;
 const subBottom = settings.subtitle?.bottom_offset ?? 40;
 const subW = (W * subWidthPct) / 100;
@@ -216,7 +253,7 @@ const subX0 = (W - subW) / 2;
 const subX1 = (W + subW) / 2;
 const charBoxes = Object.values(chars).map((c) => {
   const side = c.position === "left" ? "left" : "right";
-  const x0 = side === "left" ? 40 : W - 40 - charH;
+  const x0 = side === "left" ? charInset : W - charInset - charH;
   return { side, x0, x1: x0 + charH, y0: H - charH, y1: H };
 });
 let subY0 = H - subBottom - subH;
@@ -243,10 +280,41 @@ const clip = (inner, extraAttrs, style) => {
   return `    <div class="clip" id="clip-${idSeq}" data-start="${extraAttrs.start}" data-duration="${extraAttrs.dur}" data-track-index="${extraAttrs.track}" style="position:absolute;inset:0;z-index:${extraAttrs.z}">\n      ${inner}\n    </div>`;
 };
 
-clips.push(clip(
-  `<img src="background.png" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />`,
-  { start: 0, dur: total, track: 0, z: 0 },
-));
+// ---- background: one segment per scene run (per-scene themes) ----
+const sceneOf = (line) => line.scene ?? 1;
+const runs = [];
+for (const seg of timeline) {
+  const sc = sceneOf(seg.line);
+  if (runs.length && runs[runs.length - 1].scene === sc) {
+    runs[runs.length - 1].end = seg.subEnd;
+  } else {
+    runs.push({ scene: sc, start: seg.start, end: seg.subEnd });
+  }
+}
+for (let i = 0; i < runs.length; i++) {
+  runs[i].end = i < runs.length - 1 ? runs[i + 1].start : total;
+}
+const usedThemes = new Set();
+for (const run of runs) {
+  const theme = (settings.scenes && settings.scenes[String(run.scene)]) || settings.background || "riverbank";
+  usedThemes.add(theme);
+  const src = `bg-scene${run.scene}.png`;
+  fs.copyFileSync(path.join(repoRoot, "assets", "backgrounds", `${theme}.png`), path.join(workDir, src));
+  clips.push(clip(
+    `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />`,
+    { start: run.start.toFixed(3), dur: (run.end - run.start).toFixed(3), track: 0, z: 0 },
+  ));
+}
+if (usedThemes.size > 1) console.log(`[map-project] scene backgrounds: ${[...usedThemes].join(", ")}`);
+// (per-scene background segments replace the single full-video image)
+if (settings.bgm && settings.bgm.src) {
+  const bgmAbs = path.join(projectDir, settings.bgm.src);
+  if (!fs.existsSync(bgmAbs)) die(`settings.bgm.src missing: ${settings.bgm.src}`);
+  fs.copyFileSync(bgmAbs, path.join(workDir, "bgm.mp3"));
+  const bgmVol = settings.bgm.volume ?? 0.3;
+  clips.push(`    <audio class="clip" id="bgm" src="bgm.mp3" data-start="0" data-duration="${total}" data-volume="${bgmVol}" data-track-index="15"></audio>`);
+  console.log(`[map-project] bgm: ${settings.bgm.src} at volume ${bgmVol}`);
+}
 
 const charPos = {};
 for (const id of Object.keys(chars)) {
@@ -257,28 +325,56 @@ for (const id of Object.keys(chars)) {
   charPos[id] = { side, hasArt };
   if (useImagesCheck(settings) && hasArt) {
     charPos[id].art = true;
-    const imgStyle = `position:absolute;bottom:0;${side}:40px;height:${charH}px;object-fit:contain`;
+    const imgStyle = `position:absolute;bottom:0;${side}:${charInset}px;height:${charH}px;object-fit:contain`;
     clips.push(clip(
       `<img src="images/${id}/mouth_close.png" style="${imgStyle}" />`,
       { start: 0, dur: total, track: 10, z: 10 },
     ));
     for (const seg of timeline.filter((s) => s.line.character === id)) {
-      let k = seg.start;
-      let open = true;
-      let n = 0;
-      while (k < seg.end - 0.01) {
-        const d = Math.min(0.2, seg.end - k);
-        n += 1;
-        clips.push(clip(
-          `<img src="images/${id}/mouth_${open ? "open" : "close"}.png" style="${imgStyle}" />`,
-          { start: k.toFixed(3), dur: d.toFixed(3), track: 11, z: 11 },
-        ));
-        k += d;
-        open = !open;
+      const windows = lipsyncLines ? lipsyncLines[seg.file.replace(/\.wav$/, "")] : undefined;
+      const voiceEnd = seg.start + seg.dur;
+      if (windows !== undefined) {
+        // Audio-driven: open art on each window, explicit closed art on the
+        // gaps (the runtime cannot be trusted to show the track-10 base
+        // through 2-frame holes). The pause after the voice falls back to
+        // the track-10 base image. Window seconds are wav-relative; wall
+        // time divides by the playback rate like the audio element does.
+        const emit = (kind, s, e) => {
+          if (e - s < 0.02) return;
+          clips.push(clip(
+            `<img src="images/${id}/mouth_${kind}.png" style="${imgStyle}" />`,
+            { start: s.toFixed(3), dur: (e - s).toFixed(3), track: 11, z: 11 },
+          ));
+        };
+        const wall = (t) => Math.max(seg.start, Math.min(voiceEnd, seg.start + t / playbackRate));
+        let cursor = seg.start;
+        for (const w of windows) {
+          const s = wall(Number(w[0]));
+          const e = wall(Number(w[1]));
+          emit("close", cursor, s);
+          emit("open", s, e);
+          cursor = e;
+        }
+        emit("close", cursor, voiceEnd);
+      } else {
+        // Fixed 0.2s mouth clock (schedule absent: draft/estimate renders)
+        let k = seg.start;
+        let open = true;
+        let n = 0;
+        while (k < seg.end - 0.01) {
+          const d = Math.min(0.2, seg.end - k);
+          n += 1;
+          clips.push(clip(
+            `<img src="images/${id}/mouth_${open ? "open" : "close"}.png" style="${imgStyle}" />`,
+            { start: k.toFixed(3), dur: d.toFixed(3), track: 11, z: 11 },
+          ));
+          k += d;
+          open = !open;
+        }
       }
     }
   } else {
-    const posCss = side === "left" ? "left:40px" : "right:40px";
+    const posCss = side === "left" ? `left:${charInset}px` : `right:${charInset}px`;
     clips.push(clip(
       `<div style="position:absolute;bottom:0;${posCss};width:200px;height:300px;background:${color}20;border:4px solid ${color};border-radius:16px;display:flex;align-items:center;justify-content:center"><span style="font-weight:bold;color:${color};font-size:24px">${esc(c.name)}</span></div>`,
       { start: 0, dur: total, track: 10, z: 10 },
@@ -289,13 +385,22 @@ function useImagesCheck(settings) {
   return settings.character?.use_images ?? false;
 }
 
+const secondaryLang = settings.subtitles?.secondary_language;
 for (const seg of timeline) {
   const line = seg.line;
   const text = line.display_text || line.text;
+  const secondaryText = secondaryLang
+    ? (line.translations || {})[secondaryLang]
+    : undefined;
   idSeq += 1;
   clips.push(`    <audio class="clip" id="line-${line.id}-audio" src="voices/${seg.file}" data-start="${seg.start.toFixed(3)}" data-duration="${seg.dur.toFixed(3)}" data-playback-rate="${playbackRate}" data-track-index="20"></audio>`);
   if (line.se) {
-    const seAbs = path.join(projectDir, line.se.src);
+    let seAbs = path.join(projectDir, line.se.src);
+    if (!fs.existsSync(seAbs)) {
+      const shared = path.join(repoRoot, "assets", "se", path.basename(line.se.src));
+      if (!fs.existsSync(shared)) die(`script id ${line.id}: sound effect missing: ${line.se.src}`);
+      seAbs = shared;
+    }
     const seWork = path.join(workDir, line.se.src);
     fs.mkdirSync(path.dirname(seWork), { recursive: true });
     fs.copyFileSync(seAbs, seWork);
@@ -304,21 +409,26 @@ for (const seg of timeline) {
     clips.push(`    <audio class="clip" id="line-${line.id}-se" src="${line.se.src}" data-start="${seg.start.toFixed(3)}" data-duration="${Math.min(seDur, seg.dur + (line.pause_after ?? 0.5)).toFixed(3)}" data-volume="${(line.se.volume ?? 1).toFixed(2)}" data-track-index="21"></audio>`);
   }
   const subStyle = `position:absolute;bottom:${Math.round(subBottomFinal)}px;left:50%;transform:translateX(-50%);width:${subWidthPct}%;text-align:center;font-family:'${fontFamily}',sans-serif;font-size:${fontSize}px;font-weight:${fontWeight};color:${font.color || "#ffffff"};-webkit-text-stroke:${Math.round(fontSize * 0.2)}px ${font.outline_color || "#1F2937"};paint-order:stroke fill;overflow-wrap:anywhere;text-wrap:balance;line-height:1.4`;
-  clips.push(clip(`<div style="${subStyle}">${esc(text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 30, z: 30 }));
+  let subInner = `<div style="${subStyle}">${esc(text)}</div>`;
+  if (secondaryText) {
+    subInner += `<div style="margin-top:${Math.round(subH / 3)}px;font-size:${Math.round(fontSize * 0.55)}px;font-weight:600;opacity:0.92">${esc(secondaryText)}</div>`;
+  }
+  clips.push(clip(`<div>${subInner}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 30, z: 30 }));
   const v = line.visual;
   if (v && v.type === "terminal") {
     if (!v.command) die(`script id ${line.id}: terminal visual needs a command`);
     const outs = Array.isArray(v.output) ? v.output : [];
-    const termFs = 34;
-    const outFs = 30;
-    const innerW = W * 0.76 - 56;
+    const termFs = portrait ? 40 : 34;
+    const outFs = portrait ? 34 : 30;
+    const termW = portrait ? 0.88 : 0.76;
+    const innerW = W * termW - 56;
     const charsPerLine = Math.max(20, Math.floor(innerW / (termFs * 0.62)));
     const cmdLines = Math.max(1, Math.ceil(v.command.length / charsPerLine));
     const minH = 30 + Math.round((cmdLines + outs.length) * termFs * 1.7);
     idSeq += 1;
     const cmdId = `cmd-${idSeq}`;
     let inner =
-      `<div style="position:absolute;top:12%;left:50%;transform:translateX(-50%);width:76%;background:#161B22;border:2px solid #30363D;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden">` +
+      `<div style="position:absolute;top:${portrait ? 14 : 12}%;left:50%;transform:translateX(-50%);width:${Math.round(termW * 100)}%;background:#161B22;border:2px solid #30363D;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.45);overflow:hidden">` +
       `<div style="background:#21262D;padding:10px 16px;display:flex;gap:9px;align-items:center">` +
       `<span style="width:13px;height:13px;border-radius:50%;background:#FF5F56"></span>` +
       `<span style="width:13px;height:13px;border-radius:50%;background:#FFBD2E"></span>` +
@@ -347,9 +457,27 @@ for (const seg of timeline) {
       `<img src="${v.src}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:70%;max-height:${maxH}px;object-fit:contain;border-radius:12px" />`,
       { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 },
     ));
+  } else if (v && v.type === "video" && v.src) {
+    // Real-footage payoff: the line shows an actual rendered clip as an
+    // inset, timed to the line window. The renderer extracts video frames
+    // server-side, so the element only needs timing + muted (never fights
+    // the voice track; a muted video carries no audio of its own).
+    const vidAbs = path.join(projectDir, v.src);
+    if (!fs.existsSync(vidAbs)) die(`script id ${line.id}: visual video missing: ${v.src}`);
+    const vidWork = path.join(workDir, v.src);
+    fs.mkdirSync(path.dirname(vidWork), { recursive: true });
+    fs.copyFileSync(vidAbs, vidWork);
+    const vidW = v.width ?? Math.round(W * (portrait ? 0.62 : 0.45));
+    const mutedAttr = v.muted === false ? "" : " muted";
+    // Frame treatment: embeds never float bare on the scene (owner
+    // ruling). Default on; frame: false only for full-bleed embeds.
+    const frameStyle = v.frame === false ? "" : "border:5px solid rgba(255,255,255,0.92);";
+    idSeq += 1;
+    clips.push(`    <video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${vidW}px;max-width:88%;max-height:82%;object-fit:contain;${frameStyle}border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.45)" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video>`);
+    console.log(`[map-project] video inset: line ${line.id} shows ${v.src} (${probeSeconds(vidWork).toFixed(2)}s source)`);
   } else if (v && v.type === "text" && v.text) {
     const vs = v.font_size || 84;
-    const cardStyle = `position:absolute;inset:0 0 25% 0;display:flex;align-items:center;justify-content:center;font-family:'${fontFamily}',sans-serif;font-size:${vs}px;font-weight:bold;color:${v.color || "#ffffff"};-webkit-text-stroke:${Math.round(vs * 0.16)}px ${v.outline_color || "#1F2937"};paint-order:stroke fill;text-align:center;white-space:pre-wrap;text-wrap:balance`;
+    const cardStyle = `position:absolute;${portrait ? "inset:8% 8% 60% 0" : "inset:0 0 25% 0"};display:flex;align-items:center;justify-content:center;font-family:'${fontFamily}',sans-serif;font-size:${vs}px;font-weight:bold;color:${v.color || "#ffffff"};-webkit-text-stroke:${Math.round(vs * 0.16)}px ${v.outline_color || "#1F2937"};paint-order:stroke fill;text-align:center;white-space:pre-wrap;text-wrap:balance`;
     clips.push(clip(`<div style="${cardStyle}">${esc(v.text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
   }
 }
@@ -393,6 +521,17 @@ fs.writeFileSync(path.join(workDir, "expected-seconds.txt"), String(total));
 fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({
   lines: timeline.map((s) => ({ id: s.line.id, start: +s.start.toFixed(3), end: +s.end.toFixed(3) })),
   total,
+  // Declared layout (same shape as the remotion vendor): the subtitle
+  // band after the overlap lift (portrait raises it above the
+  // characters) plus the character corner boxes, so the platform lint
+  // probes the band the composition actually draws.
+  layout: {
+    subtitle_band: [subX0, subY0, subX1, subY0 + subH].map(Math.round),
+    characters: Object.entries(chars).map(([id], i) => ({
+      id,
+      box: [charBoxes[i].x0, charBoxes[i].y0, charBoxes[i].x1, charBoxes[i].y1].map(Math.round),
+    })),
+  },
 }));
 console.log(`[map-project] characters: ${Object.keys(chars).join(", ")}`);
 console.log(`[map-project] lines: ${script.length}, total: ${total}s`);

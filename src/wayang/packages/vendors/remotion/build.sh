@@ -22,6 +22,10 @@ echo "[remotion-vendor] workdir: $WORK"
 rm -rf "$WORK"
 mkdir -p "$WORK/public/voices"
 
+# Lipsync schedule (optional): consumed by scripts/sync-script.ts to drive the
+# mouth art. Absent on draft/estimate renders; the fixed mouth clock applies.
+cp "$PROJECT_DIR/voices/lipsync.json" "$WORK/public/voices/" 2>/dev/null || true
+
 # Copy engine source (shared node_modules stays in engine/)
 tar -C "$ENGINE" --exclude=node_modules --exclude=out -cf - . | tar -C "$WORK" -xf -
 ln -s "$ENGINE/node_modules" "$WORK/node_modules"
@@ -38,8 +42,13 @@ node "$VENDOR_DIR/scripts/map-project.mjs" "$PROJECT_DIR" "$WORK"
 # Generate engine sources from the mapped configs
 (cd "$WORK" && npm run sync)
 
+DRAFT_FLAGS=""
+if [ "${WAYANG_DRAFT:-0}" = "1" ]; then
+  DRAFT_FLAGS="--scale=0.5"
+  echo "[remotion-vendor] draft mode: --scale=0.5"
+fi
 echo "[remotion-vendor] rendering..."
-(cd "$WORK" && npx remotion render src/index.ts Main out/video.mp4)
+(cd "$WORK" && npx remotion render src/index.ts Main out/video.mp4 $DRAFT_FLAGS)
 
 # The duration guard is platform-owned: OUT_DIR carries expected-seconds.txt;
 # tools/wayang.py compares it against the render after this script exits.

@@ -55,6 +55,7 @@ for (const k of Object.keys(vendorCfg)) {
 const settingsMap = {
   video: { width: "width", height: "height", fps: "fps", playback_rate: "playbackRate" },
   font: { family: "family", size: "size", weight: "weight", color: "color" },
+  bgm: { src: "src", volume: "volume" },
   subtitle: { bottom_offset: "bottomOffset", max_width_percent: "maxWidthPercent", outline_width: "outlineWidth" },
   character: { height: "height", use_images: "useImages", images_base_path: "imagesBasePath" },
   content: { top_padding: "topPadding", side_padding: "sidePadding", bottom_padding: "bottomPadding" },
@@ -110,6 +111,7 @@ for (const line of script) {
   if (line.scene) mapped.scene = line.scene;
   if (line.pause_after !== undefined) mapped.pauseAfter = Math.round(line.pause_after * fps);
   if (line.emotion) mapped.emotion = line.emotion;
+  if (line.translations) mapped.translations = line.translations;
   if (line.visual && line.visual.type === "terminal") {
     // Terminal steps degrade to a command text card here; the simulated
     // terminal is a hyperframes feature.
@@ -135,10 +137,16 @@ for (const line of script) {
     mapped.visual = v;
   }
   if (line.se) {
-    if (!fs.existsSync(path.join(projectDir, line.se.src))) {
-      die(`script id ${line.id}: sound effect missing: ${line.se.src}`);
+    let seSrc = line.se.src;
+    if (!fs.existsSync(path.join(projectDir, seSrc))) {
+      const shared = path.join(repoRoot, "assets", "se", path.basename(seSrc));
+      if (fs.existsSync(shared)) {
+        seSrc = path.join("assets", "se", path.basename(seSrc));
+      } else {
+        die(`script id ${line.id}: sound effect missing: ${line.se.src}`);
+      }
     }
-    mapped.se = { src: line.se.src, volume: line.se.volume ?? 1 };
+    mapped.se = { src: seSrc, volume: line.se.volume ?? 1 };
   }
   engineScript.push(mapped);
 }
@@ -234,6 +242,42 @@ if (fs.existsSync(manifestPath)) {
   }
 }
 
+// ---- bgm bed: project file copied into public/bgm ----
+if (settings.bgm && settings.bgm.src) {
+  const bgmSrc = path.join(projectDir, settings.bgm.src);
+  if (!fs.existsSync(bgmSrc)) die(`settings.bgm.src missing: ${settings.bgm.src}`);
+  fs.mkdirSync(path.join(workDir, "public", "bgm"), { recursive: true });
+  fs.copyFileSync(bgmSrc, path.join(workDir, "public", "bgm", path.basename(settings.bgm.src)));
+}
+
+// ---- subtitle geometry: raise above character boxes on intersect ----
+const W2 = settings.video?.width ?? 1920;
+const H2 = settings.video?.height ?? 1080;
+const W = settings.video?.width ?? 1920;
+const H = settings.video?.height ?? 1080;
+const charH = settings.character?.height ?? 275;
+const subBottom = settings.subtitle?.bottom_offset ?? 40;
+const subW = (W * (settings.subtitle?.max_width_percent ?? 55)) / 100;
+const subX0 = Math.round((W - subW) / 2);
+const subX1 = Math.round((W + subW) / 2);
+const subLineH = (settings.font?.size ?? 70) * 1.5;
+const subY0 = Math.round(H - subBottom - subLineH * 2);
+const subY1 = Math.round(H - subBottom);
+let subBottomFinal = subBottom;
+const charBoxes = Object.entries(chars).map(([id, c]) => {
+  const x0 = c.position === "left" ? 40 : W - 40 - charH;
+  return { id, x0, x1: x0 + charH, y0: H - charH, y1: H };
+});
+for (const b of charBoxes) {
+  if (subX0 < b.x1 && subX1 > b.x0 && subY0 < b.y1 && subY1 > b.y0) {
+    subBottomFinal = Math.max(subBottomFinal, charH + 24);
+  }
+}
+if (subBottomFinal !== subBottom) {
+  engineSettings.subtitle.bottomOffset = subBottomFinal;
+  console.log(`[map-project] subtitle raised above characters (bottom ${subBottom} -> ${subBottomFinal})`);
+}
+
 // ---- Priority 2: estimate + silent placeholder wavs ----
 if (platformEngines === null) {
   console.log("[map-project] TTS source: estimate (durations.json + silent placeholder wavs written)");
@@ -263,7 +307,14 @@ const timelineLines = engineScript.map((line) => {
   frameCursor += ad + ap;
   return entry;
 });
-fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({ lines: timelineLines, total: +((frameCursor + 60) / fps).toFixed(3) }));
+fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({
+  lines: timelineLines,
+  total: +((frameCursor + 60) / fps).toFixed(3),
+  layout: {
+    subtitle_band: [subX0, Math.round(H - subBottomFinal - subLineH * 2), subX1, Math.round(H - subBottomFinal)],
+    characters: charBoxes.map((b) => ({ id: b.id, box: [b.x0, b.y0, b.x1, b.y1] })),
+  },
+}));
 
 // Expected composition length (Root.tsx contract): sum of per-line
 // playback-rate-adjusted frames plus the 60-frame closing buffer.

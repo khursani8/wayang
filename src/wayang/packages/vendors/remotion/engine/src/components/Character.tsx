@@ -7,6 +7,8 @@ interface CharacterProps {
   characterId: CharacterId;
   isSpeaking: boolean;
   emotion?: string;
+  mouth?: [number, number][]; // audio-driven open windows, line-relative frames
+  lineFrame?: number; // frames since the current line started
 }
 
 // Image file name for the current emotion (existence-checked)
@@ -43,6 +45,8 @@ export const Character: React.FC<CharacterProps> = ({
   characterId,
   isSpeaking,
   emotion = "normal",
+  mouth,
+  lineFrame,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -55,8 +59,19 @@ export const Character: React.FC<CharacterProps> = ({
 
   const isLeft = characterConfig.position === "left";
 
-  // Mouth flap (~6fps) while speaking
-  const mouthOpen = isSpeaking ? Math.floor(frame / 5) % 2 === 0 : false;
+  // Mouth: audio-driven windows when the line carries a schedule, else the
+  // fixed ~6fps clock (draft/estimate renders have no schedule).
+  const clockOpen = Math.floor(frame / 5) % 2 === 0;
+  const scheduledOpen =
+    mouth !== undefined &&
+    mouth.length > 0 &&
+    lineFrame !== undefined &&
+    mouth.some(([a, b]) => lineFrame >= a && lineFrame < b);
+  const mouthOpen = isSpeaking
+    ? mouth !== undefined
+      ? scheduledOpen
+      : clockOpen
+    : false;
 
   // Gentle bob while speaking
   const bounceY = isSpeaking

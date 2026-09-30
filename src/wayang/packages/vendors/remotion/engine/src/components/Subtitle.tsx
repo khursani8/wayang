@@ -11,6 +11,7 @@ const parser = loadDefaultJapaneseParser();
 interface SubtitleProps {
   text: string;
   character: CharacterId;
+  secondaryText?: string;
 }
 
 // CJK lines segment via BudouX; other scripts wrap at word boundaries.
@@ -49,7 +50,7 @@ const SegmentedText = ({ text }: { text: string }) => {
   );
 };
 
-export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
+export const Subtitle: React.FC<SubtitleProps> = ({ text, character, secondaryText }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -117,6 +118,18 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
             paintOrder: "stroke fill",
           }}
         >
+          {secondaryText && (
+            <div
+              style={{
+                fontSize: subtitle.secondarySize ? Math.round(subtitle.secondarySize) : Math.round(font.size * 0.55),
+                fontWeight: 600,
+                opacity: 0.92,
+                marginBottom: Math.round(font.size * 0.15),
+              }}
+            >
+              <SegmentedText text={secondaryText} />
+            </div>
+          )}
           <SegmentedText text={text} />
         </span>
         {/* Fill (front) */}
@@ -127,6 +140,18 @@ export const Subtitle: React.FC<SubtitleProps> = ({ text, character }) => {
             color: textColor,
           }}
         >
+          {secondaryText && (
+            <div
+              style={{
+                fontSize: subtitle.secondarySize ? Math.round(subtitle.secondarySize) : Math.round(font.size * 0.55),
+                fontWeight: 600,
+                opacity: 0.92,
+                marginBottom: Math.round(font.size * 0.15),
+              }}
+            >
+              <SegmentedText text={secondaryText} />
+            </div>
+          )}
           <SegmentedText text={text} />
         </span>
       </div>

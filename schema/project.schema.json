@@ -426,7 +426,8 @@
                 "text",
                 "image",
                 "none",
-                "terminal"
+                "terminal",
+                "video"
               ]
             },
             "text": {
@@ -437,6 +438,13 @@
             },
             "font_size": {
               "type": "number"
+            },
+            "width": {
+              "type": "number",
+              "minimum": 16
+            },
+            "muted": {
+              "type": "boolean"
             },
             "color": {
               "type": "string"
@@ -480,6 +488,23 @@
               "then": {
                 "required": [
                   "command"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "type": {
+                    "const": "video"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "then": {
+                "required": [
+                  "src"
                 ]
               }
             }

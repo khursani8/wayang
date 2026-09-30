@@ -452,6 +452,21 @@ for (const seg of timeline) {
       `<img src="${v.src}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:70%;max-height:${maxH}px;object-fit:contain;border-radius:12px" />`,
       { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 },
     ));
+  } else if (v && v.type === "video" && v.src) {
+    // Real-footage payoff: the line shows an actual rendered clip as an
+    // inset, timed to the line window. The renderer extracts video frames
+    // server-side, so the element only needs timing + muted (never fights
+    // the voice track; a muted video carries no audio of its own).
+    const vidAbs = path.join(projectDir, v.src);
+    if (!fs.existsSync(vidAbs)) die(`script id ${line.id}: visual video missing: ${v.src}`);
+    const vidWork = path.join(workDir, v.src);
+    fs.mkdirSync(path.dirname(vidWork), { recursive: true });
+    fs.copyFileSync(vidAbs, vidWork);
+    const vidW = v.width ?? Math.round(W * 0.45);
+    const mutedAttr = v.muted === false ? "" : " muted";
+    idSeq += 1;
+    clips.push(`    <video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${vidW}px;max-width:88%;max-height:82%;object-fit:contain;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,0.45)" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video>`);
+    console.log(`[map-project] video inset: line ${line.id} shows ${v.src} (${probeSeconds(vidWork).toFixed(2)}s source)`);
   } else if (v && v.type === "text" && v.text) {
     const vs = v.font_size || 84;
     const cardStyle = `position:absolute;inset:0 0 25% 0;display:flex;align-items:center;justify-content:center;font-family:'${fontFamily}',sans-serif;font-size:${vs}px;font-weight:bold;color:${v.color || "#ffffff"};-webkit-text-stroke:${Math.round(vs * 0.16)}px ${v.outline_color || "#1F2937"};paint-order:stroke fill;text-align:center;white-space:pre-wrap;text-wrap:balance`;

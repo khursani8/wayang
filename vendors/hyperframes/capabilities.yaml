@@ -1,7 +1,7 @@
 # What the hyperframes vendor renders from the canonical schema.
 engine: hyperframes
 supported:
-  visual_types: [text, image, terminal]
+  visual_types: [text, image, terminal, video]
   emotions: true          # needs <emotion>_open/close.png art
   se: true
   bgm: true               # segmented bed, ducked under voice

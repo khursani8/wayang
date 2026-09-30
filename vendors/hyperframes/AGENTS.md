@@ -38,6 +38,7 @@ else `project.yaml`.
 | script[].emotion | - | needs emotion art variants; otherwise invisible |
 | script[].visual.type text | centered text card per line | dark outline by default, override with outline_color |
 | script[].visual.type image | centered image card | src relative to the project; asset ships in the project |
+| script[].visual.type video | centered video inset per line | src relative to the project; width px (default 45% of stage); muted by default so it never fights the voice track; renderer extracts frames server-side, holds the final frame when the line outlasts the source |
 | script[].se | per-line audio clip | src relative to the project; duration probed; data-volume honored |
 | settings.background | background.png | theme from the shared catalog, riverbank default; project custom file wins |
 | settings.font / subtitle / character | css | font, subtitle placement, character height, use_images |

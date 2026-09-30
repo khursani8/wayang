@@ -136,4 +136,9 @@ Two ways to make the art:
 - Sound effects and image cards: `se:` and `visual.type: image` on a
   script line (see `projects/` demos or the hyperframes vendor manual).
 - Series: `uv run tools/wayang.py init-series my-series --template dialog`
+- YouTube chapters: `uv run tools/wayang.py chapters <project>` after a render
+  writes `out/chapters.txt` from the render timeline.
+- Scripted authoring: pipe `key=value` answers to
+  `wayang init tutorial <name> --wizard` (title, character_name, voice_id,
+  line_1..line_N) and the project.yaml is written for you, validated, READY.
 - Agents: point them at the root `AGENTS.md` - it routes everything.

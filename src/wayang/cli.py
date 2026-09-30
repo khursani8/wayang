@@ -5,9 +5,12 @@ import argparse
 import json
 import logging
 import os
+import re
 import shutil
 import stat
+import string
 import subprocess
+import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as pkg_version
 from pathlib import Path
@@ -70,6 +73,67 @@ def cmd_templates(args):
             log.info(d.name)
 
 
+WIZARD_REQUIRED = ("title", "character_name", "voice_id")
+
+
+def _read_wizard_answers() -> dict:
+    """key=value lines from stdin; blank lines and #comments skipped."""
+    answers: dict[str, str] = {}
+    for raw in sys.stdin:
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, sep, value = line.partition("=")
+        if not sep or not key.strip() or not value.strip():
+            fail(f"wizard: cannot parse answer line (expected key=value): {line}")
+        answers[key.strip()] = value.strip()
+    return answers
+
+
+def _apply_wizard(dst: Path, name: str) -> None:
+    """Rewrite the scaffolded project.yaml from piped wizard answers."""
+    answers = _read_wizard_answers()
+    missing = [k for k in WIZARD_REQUIRED if not answers.get(k)]
+    if missing:
+        fail(f"wizard: missing answer(s): {', '.join(missing)}")
+    lines = sorted(
+        (int(m.group(1)), text)
+        for key, text in answers.items()
+        if (m := re.match(r"^line_(\d+)$", key)) and text
+    )
+    if not lines:
+        fail("wizard: no script lines (answer line_1=..., line_2=...)")
+    data = yaml.safe_load((dst / "project.yaml").read_text(encoding="utf-8"))
+    cid, char = next(iter(data["characters"].items()))
+    char["name"] = answers["character_name"]
+    char["voice"] = {"engine": "revolab", "voice_id": answers["voice_id"]}
+    data["meta"]["title"] = answers["title"]
+    data["script"] = [
+        {
+            "id": i,
+            "character": cid,
+            "text": text,
+            "scene": 1 + (i - 1) // 5,
+            "pause_after": 1.0,
+            "visual": {
+                "type": "text",
+                "text": " ".join(text.split()[:4]).strip(string.punctuation) or text,
+                "font_size": 84,
+                "color": "#ffffff",
+                "animation": "zoomIn",
+            },
+        }
+        for i, (_n, text) in enumerate(lines, start=1)
+    ]
+    header = (
+        f"# projects/{name} - authored by 'wayang init --wizard' from piped answers.\n"
+        f"# Edit freely, then: wayang validate projects/{name}\n"
+    )
+    (dst / "project.yaml").write_text(
+        header + yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+
+
 def cmd_init(args):
     name = args.name
     name = name.removeprefix("projects/")
@@ -94,6 +158,11 @@ def cmd_init(args):
         text = pf.read_text(encoding="utf-8")
         text = text.replace("width: 1920", f"width: {w}", 1).replace("height: 1080", f"height: {h}", 1)
         pf.write_text(text, encoding="utf-8")
+    if args.wizard:
+        _apply_wizard(dst, name)
+        validate_project(dst)
+        log.info("READY")
+        return
     log.info(
         "created projects/%s - edit project.yaml, then: wayang validate projects/%s",
         name,
@@ -194,6 +263,8 @@ def validate_project(pdir: Path) -> dict:
         visual = line.get("visual") or {}
         if visual.get("type") == "image" and visual.get("src") and not (pdir / visual["src"]).is_file():
             fail(f"script id {line['id']}: visual image missing: {visual['src']}")
+        if visual.get("type") == "video" and visual.get("src") and not (pdir / visual["src"]).is_file():
+            fail(f"script id {line['id']}: visual video missing: {visual['src']}")
         se = line.get("se")
         if se and not (pdir / se["src"]).is_file():
             fail(f"script id {line['id']}: sound effect missing: {se['src']}")
@@ -615,6 +686,54 @@ def cmd_captions(args):
     )
 
 
+WORD_BAN = ("fail", "pypi", "kontak")
+
+
+def _chapter_stamp(t: float) -> str:
+    """YouTube chapter timestamp: M:SS (H:MM:SS past the hour mark)."""
+    s = max(0, int(t))
+    h, rem = divmod(s, 3600)
+    m, sec = divmod(rem, 60)
+    return f"{h}:{m:02d}:{sec:02d}" if h else f"{m}:{sec:02d}"
+
+
+def _chapter_label(text: str) -> str:
+    """First few words of the line text, punctuation-trimmed, word-ban safe."""
+    words = [w.strip(string.punctuation) for w in str(text).split()]
+    words = [w for w in words if w and not any(b in w.lower() for b in WORD_BAN)]
+    return " ".join(words[:5]) or "Bab"
+
+
+def cmd_chapters(args):
+    pdir = resolve_project(args.project)
+    data, _sf, _pre = load_lenient(pdir)
+    if data is None:
+        fail("project could not be loaded")
+    tl_path = pdir / "out" / "timeline.json"
+    if not tl_path.is_file():
+        fail(f"no rendered timeline at {tl_path} - run wayang render first")
+    windows, _from_vendor = _line_windows(data, pdir)
+    rows = []
+    seen: set[int] = set()
+    for line, start, _end in windows:
+        sec = int(start)
+        if sec in seen:
+            continue  # two lines inside one second: keep the earlier chapter
+        seen.add(sec)
+        label = _chapter_label(line.get("display_text") or line.get("text", ""))
+        rows.append((_chapter_stamp(start), label))
+    if not rows:
+        fail("no chapters: script and rendered timeline share no line ids")
+    if rows[0][0] != "0:00":
+        fail(f"chapters must start at 0:00, timeline starts at {rows[0][0]}")
+    out = "".join(f"{stamp} {label}\n" for stamp, label in rows)
+    out_dir = pdir / "out"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "chapters.txt").write_text(out, encoding="utf-8")
+    print(out, end="")
+    log.info("chapters written: %s (%d chapters)", out_dir / "chapters.txt", len(rows))
+
+
 def cmd_voices(args):
     entries, err = provider_voices(args.engine)
     if err:
@@ -895,6 +1014,7 @@ def main():
 
     p = sub.add_parser("init", help="scaffold a project from a template")
     p.add_argument("--preset", default="landscape", help="landscape | portrait | square")
+    p.add_argument("--wizard", action="store_true", help="author project.yaml from piped key=value answers (title, character_name, voice_id, line_1..line_N)")
     p.add_argument("template")
     p.add_argument("name")
     p.set_defaults(func=cmd_init)
@@ -940,6 +1060,10 @@ def main():
     p = sub.add_parser("voices", help="browse voice ids for a TTS engine")
     p.add_argument("--engine", default="revolab")
     p.set_defaults(func=cmd_voices)
+
+    p = sub.add_parser("chapters", help="emit YouTube chapter lines from the render timeline")
+    p.add_argument("project")
+    p.set_defaults(func=cmd_chapters)
 
     p = sub.add_parser("stats", help="duration and talk-time estimate")
     p.add_argument("project")

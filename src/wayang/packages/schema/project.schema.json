@@ -152,6 +152,23 @@
             },
             "secondary_size": {
               "type": "number"
+            },
+            "per_character": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "color": {
+                    "type": "string"
+                  },
+                  "font_size": {
+                    "type": "integer",
+                    "minimum": 10
+                  }
+                }
+              }
             }
           }
         },
@@ -168,6 +185,18 @@
             },
             "images_base_path": {
               "type": "string"
+            }
+          }
+        },
+        "layout": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variant": {
+              "type": "string",
+              "enum": [
+                "two-panel"
+                ]
             }
           }
         },

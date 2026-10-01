@@ -13,7 +13,7 @@ seconds everywhere; vendors convert to their own units.
   override), scene, pause_after (seconds), emotion, visual (text/image/video card; video shows real footage as a framed inset), se.
 - `settings`: video (width, height, fps, playback_rate - slows voice and
   pacing; 0.9 is a good tutorial pace), font, subtitle,
-  character, content, background (theme name from assets/backgrounds/ or a
+  character, layout, content, background (theme name from assets/backgrounds/ or a
   project assets/background.png override).
 
 ## What you must fill

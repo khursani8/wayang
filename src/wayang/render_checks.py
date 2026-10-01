@@ -116,6 +116,10 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
 
     # layout overlap: prefer the mapper-declared boxes, fall back to computed
     declared = (tl or {}).get("layout")
+    char_boxes: dict[str, tuple] = {}
+    for entry in (declared or {}).get("characters", []):
+        if entry.get("id") and entry.get("box") and len(entry["box"]) == 4:
+            char_boxes[entry["id"]] = tuple(float(v) for v in entry["box"])
     if declared:
         band = declared.get("subtitle_band") or []
         for entry in declared.get("characters", []):
@@ -197,7 +201,10 @@ def lint_project(pdir: Path, mp4: Path, data: dict) -> bool:
         c = data["characters"][line["character"]]
         side = c.get("position", "right")
         cx0 = 40 if side == "left" else W - 40 - charH
-        box = (cx0, H - charH, cx0 + charH, H)
+        # Prefer the mapper-declared character box: the composition may park
+        # corner art elsewhere (two-panel puts it at the top panel's bottom
+        # edge), and the declared boxes are what the mapper actually drew.
+        box = char_boxes.get(line["character"]) or (cx0, H - charH, cx0 + charH, H)
         theme_png = paths.backgrounds_dir() / f"{(s.get('background') or 'riverbank')}.png"
         if theme_png.is_file():
             theme_img = Image.open(theme_png).convert("RGB").resize((W, H))

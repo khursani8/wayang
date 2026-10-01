@@ -29,3 +29,8 @@ Use it two ways:
    trimmed natively (crop boxes ignored).
 
 Keep lines short: two subtitle lines max, `pause_after: 1.0`.
+
+Produced variants: `settings.subtitle.per_character` styles each speaker's
+subtitle (distinct color per character); `settings.layout.variant:
+two-panel` splits the frame into a full-scene top panel and a character
+close-up + title card bottom panel. See docs/shorts.md.

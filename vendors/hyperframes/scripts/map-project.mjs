@@ -79,6 +79,15 @@ const H = settings.video?.height ?? 1080;
 // Portrait (shorts) compositions stack instead of spreading: cards go
 // narrow with wide margins, type grows, embeds carry a frame.
 const portrait = H > W;
+// Produced layout variants: settings.layout.variant switches the portrait
+// composition. "two-panel" renders the scene (background, visual card,
+// terminal, embed, subtitle, corner art) inside the top 56.25% and gives
+// the speaking character a close-up panel plus the meta.title card below.
+const layoutVariant = settings.layout?.variant || "single";
+const twoPanel = portrait && layoutVariant === "two-panel";
+const panelSplit = Math.round(H * 0.5625);
+const panelGap = 16;
+const topBottom = twoPanel ? panelSplit : H;
 
 for (const k of Object.keys(vendorCfg)) {
   if (!["estimate_cps"].includes(k)) {
@@ -259,7 +268,16 @@ const charInset = portrait ? 56 : 40;
 const subWidthPct = settings.subtitle?.max_width_percent ?? 55;
 const subBottom = settings.subtitle?.bottom_offset ?? 40;
 const subW = (W * subWidthPct) / 100;
-const subLineH = fontSize * 1.5;
+// Per-speaker subtitle styling: settings.subtitle.per_character keys the
+// primary subtitle color (and optional font_size) by speaking character.
+// The declared band uses the largest configured size so lint ink checks
+// probe the box the biggest speaker actually draws.
+const perChar = settings.subtitle?.per_character || {};
+const subFsMax = Math.max(
+  fontSize,
+  ...Object.values(perChar).map((spk) => spk.font_size || 0),
+);
+const subLineH = subFsMax * 1.5;
 const SUB_MAX_LINES = 2;
 const subH = subLineH * SUB_MAX_LINES;
 const subX0 = (W - subW) / 2;
@@ -267,9 +285,9 @@ const subX1 = (W + subW) / 2;
 const charBoxes = Object.values(chars).map((c) => {
   const side = c.position === "left" ? "left" : "right";
   const x0 = side === "left" ? charInset : W - charInset - charH;
-  return { side, x0, x1: x0 + charH, y0: H - charH, y1: H };
+  return { side, x0, x1: x0 + charH, y0: topBottom - charH, y1: topBottom };
 });
-let subY0 = H - subBottom - subH;
+let subY0 = topBottom - subBottom - subH;
 let subMoved = false;
 for (const box of charBoxes) {
   const intersects = subX0 < box.x1 && subX1 > box.x0 && subY0 < box.y1 && subY0 + subH > box.y0;
@@ -278,7 +296,7 @@ for (const box of charBoxes) {
     subMoved = true;
   }
 }
-const subBottomFinal = Math.max(0, H - subY0 - subH);
+const subBottomFinal = Math.max(0, H - subY0 - subH); // frame-based: the sub div measures from the frame bottom
 if (subMoved) {
   console.log(`[map-project] overlap: subtitle moved above characters (bottom ${subBottom} -> ${Math.round(subBottomFinal)}px)`);
 }
@@ -294,6 +312,14 @@ const clip = (inner, extraAttrs, style) => {
   return `    <div class="clip" id="clip-${idSeq}" data-start="${extraAttrs.start}" data-duration="${extraAttrs.dur}" data-track-index="${extraAttrs.track}" style="position:absolute;inset:0;z-index:${extraAttrs.z}">\n      ${inner}\n    </div>`;
 };
 
+
+// Two-panel: scene elements are percent-positioned; confining them to the
+// top panel needs a positioned ancestor of panel height, so those inners
+// are wrapped. px-positioned elements (subtitles, art) need no wrapper.
+const sceneWrap = (inner) =>
+  twoPanel
+    ? `<div style="position:absolute;top:0;left:0;width:100%;height:${panelSplit}px;overflow:hidden">${inner}</div>`
+    : inner;
 // ---- background: one segment per scene run (per-scene themes) ----
 const sceneOf = (line) => line.scene ?? 1;
 const runs = [];
@@ -315,7 +341,7 @@ for (const run of runs) {
   const src = `bg-scene${run.scene}.png`;
   fs.copyFileSync(path.join(repoRoot, "assets", "backgrounds", `${theme}.png`), path.join(workDir, src));
   clips.push(clip(
-    `<img src="${src}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />`,
+    `<img src="${src}" style="position:absolute;top:0;left:0;width:100%;height:${twoPanel ? panelSplit : H}px;object-fit:cover" />`,
     { start: run.start.toFixed(3), dur: (run.end - run.start).toFixed(3), track: 0, z: 0 },
   ));
 }
@@ -339,7 +365,7 @@ for (const id of Object.keys(chars)) {
   charPos[id] = { side, hasArt };
   if (useImagesCheck(settings) && hasArt) {
     charPos[id].art = true;
-    const imgStyle = `position:absolute;bottom:0;${side}:${charInset}px;height:${charH}px;object-fit:contain`;
+    const imgStyle = `position:absolute;${twoPanel ? `top:${panelSplit - charH}px` : "bottom:0"};${side}:${charInset}px;height:${charH}px;object-fit:contain`;
     clips.push(clip(
       `<img src="images/${id}/mouth_close.png" style="${imgStyle}" />`,
       { start: 0, dur: total, track: 10, z: 10 },
@@ -390,16 +416,71 @@ for (const id of Object.keys(chars)) {
   } else {
     const posCss = side === "left" ? `left:${charInset}px` : `right:${charInset}px`;
     clips.push(clip(
-      `<div style="position:absolute;bottom:0;${posCss};width:200px;height:300px;background:${color}20;border:4px solid ${color};border-radius:16px;display:flex;align-items:center;justify-content:center"><span style="font-weight:bold;color:${color};font-size:24px">${esc(c.name)}</span></div>`,
+      `<div style="position:absolute;${twoPanel ? `top:${panelSplit - 300}px` : "bottom:0"};${posCss};width:200px;height:300px;background:${color}20;border:4px solid ${color};border-radius:16px;display:flex;align-items:center;justify-content:center"><span style="font-weight:bold;color:${color};font-size:24px">${esc(c.name)}</span></div>`,
       { start: 0, dur: total, track: 10, z: 10 },
     ));
+  }
+}
+
+// ---- two-panel variant: bottom panel (backdrop, title card, close-up) ----
+if (twoPanel) {
+  const backdropTop = panelSplit + panelGap;
+  const panelStyle = `position:absolute;top:${backdropTop}px;left:0;right:0;bottom:0;background:#0E141B`;
+  const titleStyle = `position:absolute;top:${backdropTop + 36}px;left:50%;transform:translateX(-50%);max-width:84%;background:rgba(22,27,34,0.88);border:2px solid #30363D;border-radius:14px;padding:16px 34px;text-align:center;font-family:'${fontFamily}',sans-serif;font-size:54px;font-weight:${fontWeight};color:#FFFFFF;-webkit-text-stroke:10px #1F2937;paint-order:stroke fill`;
+  const panelInner = `<div style="${panelStyle}"></div>` +
+    (project.meta?.title ? `<div style="${titleStyle}">${esc(project.meta.title)}</div>` : "");
+  clips.push(clip(panelInner, { start: 0, dur: total, track: 4, z: 4 }));
+  // Speaker-follow close-up: each line parks its character's enlarged art
+  // from the line start to the next line start (close art as the base,
+  // mouth overlays during the voice windows, same schedule as corner art).
+  const closeH = Math.round((H - backdropTop) * 0.78);
+  const closeStyle = `position:absolute;bottom:16px;left:50%;transform:translateX(-50%);height:${closeH}px;object-fit:contain`;
+  for (let i = 0; i < timeline.length; i++) {
+    const seg = timeline[i];
+    const until = i + 1 < timeline.length ? timeline[i + 1].start : total;
+    const cid = seg.line.character;
+    if (!charPos[cid] || !charPos[cid].art) continue;
+    clips.push(clip(
+      `<img src="images/${cid}/mouth_close.png" style="${closeStyle}" />`,
+      { start: seg.start.toFixed(3), dur: (until - seg.start).toFixed(3), track: 12, z: 12 },
+    ));
+    const windows = lipsyncLines ? lipsyncLines[seg.file.replace(/\.wav$/, "")] : undefined;
+    const voiceEnd = seg.start + seg.dur;
+    const emit = (kind, s, e) => {
+      if (e - s < 0.02) return;
+      clips.push(clip(
+        `<img src="images/${cid}/mouth_${kind}.png" style="${closeStyle}" />`,
+        { start: s.toFixed(3), dur: (e - s).toFixed(3), track: 13, z: 13 },
+      ));
+    };
+    const wall = (t) => Math.max(seg.start, Math.min(voiceEnd, seg.start + t / playbackRate));
+    if (windows !== undefined) {
+      let cur = seg.start;
+      for (const w of windows) {
+        const s = wall(Number(w[0]));
+        const e = wall(Number(w[1]));
+        emit("close", cur, s);
+        emit("open", s, e);
+        cur = e;
+      }
+      emit("close", cur, voiceEnd);
+    } else {
+      let k = seg.start;
+      let open = true;
+      while (k < seg.end - 0.01) {
+        const d = Math.min(0.2, seg.end - k);
+        emit(open ? "open" : "close", k, k + d);
+        k += d;
+        open = !open;
+      }
+    }
   }
 }
 function useImagesCheck(settings) {
   return settings.character?.use_images ?? false;
 }
 
-const secondaryLang = settings.subtitles?.secondary_language;
+const secondaryLang = settings.subtitle?.secondary_language;
 for (const seg of timeline) {
   const line = seg.line;
   const text = line.display_text || line.text;
@@ -422,11 +503,13 @@ for (const seg of timeline) {
     idSeq += 1;
     clips.push(`    <audio class="clip" id="line-${line.id}-se" src="${line.se.src}" data-start="${seg.start.toFixed(3)}" data-duration="${Math.min(seDur, seg.dur + (line.pause_after ?? 0.5)).toFixed(3)}" data-volume="${(line.se.volume ?? 1).toFixed(2)}" data-track-index="21"></audio>`);
   }
-  const subStyle = `position:absolute;bottom:${Math.round(subBottomFinal)}px;left:50%;transform:translateX(-50%);width:${subWidthPct}%;text-align:center;font-family:'${fontFamily}',sans-serif;font-size:${fontSize}px;font-weight:${fontWeight};color:${font.color || "#ffffff"};-webkit-text-stroke:${Math.round(fontSize * 0.2)}px ${font.outline_color || "#1F2937"};paint-order:stroke fill;overflow-wrap:anywhere;text-wrap:balance;line-height:1.4`;
-  let subInner = `<div style="${subStyle}">${esc(text)}</div>`;
-  if (secondaryText) {
-    subInner += `<div style="margin-top:${Math.round(subH / 3)}px;font-size:${Math.round(fontSize * 0.55)}px;font-weight:600;opacity:0.92">${esc(secondaryText)}</div>`;
-  }
+  // Per-speaker styling: the speaking character's per_character entry
+  // colors (and optionally resizes) the primary subtitle.
+  const spk = perChar[line.character] || {};
+  const subColor = spk.color || font.color || "#ffffff";
+  const subFs = spk.font_size || fontSize;
+  const subStyle = `position:absolute;bottom:${Math.round(subBottomFinal)}px;left:50%;transform:translateX(-50%);width:${subWidthPct}%;text-align:center;font-family:'${fontFamily}',sans-serif;font-size:${subFs}px;font-weight:${fontWeight};color:${subColor};-webkit-text-stroke:${Math.round(subFs * 0.2)}px ${font.outline_color || "#1F2937"};paint-order:stroke fill;overflow-wrap:anywhere;text-wrap:balance;line-height:1.4`;
+  let subInner = `<div style="${subStyle}">${esc(text)}${secondaryText ? `<div style="margin-top:${Math.round(subH / 3)}px;font-size:${Math.round(fontSize * 0.55)}px;font-weight:600;opacity:0.92">${esc(secondaryText)}</div>` : ""}</div>`;
   clips.push(clip(`<div>${subInner}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 30, z: 30 }));
   const v = line.visual;
   if (v && v.type === "terminal") {
@@ -464,11 +547,11 @@ for (const seg of timeline) {
     const typeStart = seg.start + 0.35;
     const typeDur = Math.min(1.6, Math.max(0.6, cmdChars.length * 0.035));
     tweenLines.push(`tl.to("#${cmdId} .ch", { opacity: 1, duration: 0.02, stagger: ${(typeDur / cmdChars.length).toFixed(4)}, ease: "none" }, ${typeStart.toFixed(3)});`);
-    clips.push(clip(inner, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
+    clips.push(clip(sceneWrap(inner), { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
   } else if (v && v.type === "image" && v.src) {
     const maxH = v.font_size ? Math.min(v.font_size, H * 0.45) : H * 0.45;
     clips.push(clip(
-      `<img src="${v.src}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:70%;max-height:${maxH}px;object-fit:contain;border-radius:12px" />`,
+      sceneWrap(`<img src="${v.src}" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:70%;max-height:${maxH}px;object-fit:contain;border-radius:12px" />`),
       { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 },
     ));
   } else if (v && v.type === "video" && v.src) {
@@ -497,18 +580,18 @@ for (const seg of timeline) {
     const cardW = vidW + 2 * ring;
     const cardH = Math.round((vidW * fh) / fw) + 2 * ring;
     const cardX0 = Math.round(W / 2 - cardW / 2);
-    const cardY0 = Math.round(0.47 * H - cardH / 2);
+    const cardY0 = Math.round((twoPanel ? panelSplit : H) * 0.47 - cardH / 2);
     embeds.push({ id: `line-${line.id}`, box: [cardX0, cardY0, cardX0 + cardW, cardY0 + cardH] });
     clips.push(clip(
-      `<div style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${cardW}px;${frameCss}">` +
-      `<video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="display:block;width:100%;object-fit:contain" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video></div>`,
+      sceneWrap(`<div style="position:absolute;top:47%;left:50%;transform:translate(-50%,-50%);width:${cardW}px;${frameCss}">` +
+      `<video class="clip" id="line-${line.id}-video" src="${v.src}"${mutedAttr} playsinline style="display:block;width:100%;object-fit:contain" data-start="${seg.start.toFixed(3)}" data-duration="${(seg.subEnd - seg.start).toFixed(3)}" data-track-index="6"></video></div>`),
       { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 6, z: 6 },
     ));
     console.log(`[map-project] video inset: line ${line.id} shows ${v.src} (${probeSeconds(vidWork).toFixed(2)}s source)`);
   } else if (v && v.type === "text" && v.text) {
     const vs = v.font_size || 84;
     const cardStyle = `position:absolute;${portrait ? "inset:8% 8% 60% 0" : "inset:0 0 25% 0"};display:flex;align-items:center;justify-content:center;font-family:'${fontFamily}',sans-serif;font-size:${vs}px;font-weight:bold;color:${v.color || "#ffffff"};-webkit-text-stroke:${Math.round(vs * 0.16)}px ${v.outline_color || "#1F2937"};paint-order:stroke fill;text-align:center;white-space:pre-wrap;text-wrap:balance`;
-    clips.push(clip(`<div style="${cardStyle}">${esc(v.text)}</div>`, { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
+    clips.push(clip(sceneWrap(`<div style="${cardStyle}">${esc(v.text)}</div>`), { start: seg.start.toFixed(3), dur: (seg.subEnd - seg.start).toFixed(3), track: 5, z: 5 }));
   }
 }
 
@@ -562,6 +645,7 @@ fs.writeFileSync(path.join(workDir, "timeline.json"), JSON.stringify({
       box: [charBoxes[i].x0, charBoxes[i].y0, charBoxes[i].x1, charBoxes[i].y1].map(Math.round),
     })),
     embeds,
+    panels: twoPanel ? { split: panelSplit, gap: panelGap } : undefined,
   },
 }));
 console.log(`[map-project] characters: ${Object.keys(chars).join(", ")}`);

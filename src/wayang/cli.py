@@ -1005,8 +1005,10 @@ def cmd_shorts_sample(args):
     pdir = resolve_project(args.project)
     video = Path(args.video) if args.video else pdir / "out" / "video.mp4"
     out_dir = Path(args.out) if args.out else pdir / "shorts" / "brief"
-    sample_brief(video, out_dir, n_frames=args.frames, bin_seconds=args.bin)
-    log.info("next: read the brief, then write %s (see docs/shorts.md)", pdir / "shorts" / "plan.yaml")
+    sample_brief(video, out_dir, n_frames=args.frames, bin_seconds=args.bin,
+                 pdir=pdir, window=args.window, stride=args.stride)
+    log.info("next: read the brief, rank windows by window-scores.json, then write %s (see docs/shorts.md)",
+             pdir / "shorts" / "plan.yaml")
 
 
 def _portrait_master(pdir: Path, plan: dict) -> Path:
@@ -1179,6 +1181,8 @@ def main():
     p.add_argument("--out", help="brief dir (default: <project>/shorts/brief)")
     p.add_argument("--frames", type=int, default=12, help="brief frames to sample (default 12)")
     p.add_argument("--bin", type=float, default=1.0, help="audio curve bin seconds (default 1.0)")
+    p.add_argument("--window", type=float, default=5.0, help="highlight window seconds (default 5)")
+    p.add_argument("--stride", type=float, default=1.0, help="highlight window stride seconds (default 1)")
     p.set_defaults(func=cmd_shorts_sample)
 
     p = sub.add_parser("shorts-render", help="cut + verify portrait clips from shorts/plan.yaml")

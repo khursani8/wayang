@@ -83,7 +83,8 @@ def audio_curve(video: Path, src: dict, bin_seconds: float) -> list:
     return curve
 
 
-def sample_brief(video: Path, brief_dir: Path, n_frames: int = 12, bin_seconds: float = 1.0) -> dict:
+def sample_brief(video: Path, brief_dir: Path, n_frames: int = 12, bin_seconds: float = 1.0,
+                 pdir: Path | None = None, window: float = 5.0, stride: float = 1.0) -> dict:
     """Write <brief_dir> with frames/, audio-curve.json, meta.json.
 
     Resumable: existing non-empty frame jpegs are reused, json is written
@@ -120,8 +121,137 @@ def sample_brief(video: Path, brief_dir: Path, n_frames: int = 12, bin_seconds: 
     }
     _atomic_write(brief_dir / "meta.json", json.dumps(meta, indent=2) + "\n")
     _atomic_write(brief_dir / "audio-curve.json", json.dumps(curve, indent=2) + "\n")
-    log.info("brief: %s (%d frames, %d audio bins)", brief_dir, n_frames, len(curve))
+    scores: dict | None = None
+    if pdir is not None:
+        wins, src_label = script_windows(pdir)
+        scores = window_scores(wins, curve, src["duration"], window=window, stride=stride)
+        scores["script_source"] = src_label
+        _atomic_write(brief_dir / "window-scores.json", json.dumps(scores, indent=2) + "\n")
+    log.info(
+        "brief: %s (%d frames, %d audio bins%s)",
+        brief_dir, n_frames, len(curve),
+        ", top window %.1f-%.1fs score %.2f" % (
+            scores["windows"][0]["start"], scores["windows"][0]["end"],
+            scores["windows"][0]["score"]) if scores and scores["windows"] else "",
+    )
     return meta
+
+
+def script_windows(pdir: Path) -> tuple[list, str]:
+    """Script line windows on the source clock, for brief window scoring.
+
+    out/timeline.json is exact when the sampled video is that project's
+    render. Otherwise windows are reconstructed from the voices manifest
+    (or a cps estimate) with the mapper's timing formula: approximate,
+    and the brief records which source was used.
+    """
+    script_text: dict[int, str] = {}
+    script_char: dict[int, str] = {}
+    pause_after: dict[int, float] = {}
+    data = None
+    project_file = pdir / "project.yaml"
+    if project_file.is_file():
+        data = yaml.safe_load(project_file.read_text(encoding="utf-8")) or {}
+    for line in (data or {}).get("script") or []:
+        try:
+            lid = int(line["id"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        script_text[lid] = str(line.get("text") or "")
+        script_char[lid] = str(line.get("character") or "")
+        try:
+            pause_after[lid] = float(line.get("pause_after", 0.5))
+        except (TypeError, ValueError):
+            pause_after[lid] = 0.5
+
+    tl_path = pdir / "out" / "timeline.json"
+    if tl_path.is_file():
+        try:
+            tl = json.loads(tl_path.read_text(encoding="utf-8"))
+            lines = tl.get("lines") or []
+        except json.JSONDecodeError as e:
+            log.warning("timeline.json unreadable (%s), falling back to estimate", e)
+            lines = []
+        if lines:
+            return (
+                [
+                    {
+                        "id": int(e["id"]),
+                        "start": float(e["start"]),
+                        "end": float(e["end"]),
+                        "text": script_text.get(int(e["id"]), ""),
+                    }
+                    for e in lines
+                    if int(e["id"]) in script_text
+                ],
+                "timeline.json",
+            )
+
+    settings = (data or {}).get("settings") or {}
+    vendor = ((data or {}).get("vendor") or {}).get("hyperframes") or {}
+    cps = float(vendor.get("estimate_cps", 7.5))
+    rate = float(((settings.get("video") or {}).get("playback_rate", 1)) or 1)
+    opening = 3.0 if settings.get("title_card") else 0.0
+    manifest: dict = {}
+    mf = pdir / "voices" / "manifest.json"
+    if mf.is_file():
+        try:
+            manifest = (json.loads(mf.read_text(encoding="utf-8")).get("lines")) or {}
+        except json.JSONDecodeError as e:
+            log.warning("voices manifest unreadable (%s), scoring uses cps estimate", e)
+            manifest = {}
+    wins, t = [], opening
+    for lid in sorted(script_text):
+        nospace = script_text[lid].replace(" ", "").replace("\n", "")
+        key = f"{lid:02d}_{script_char[lid]}.wav"
+        if key in manifest and "seconds" in manifest[key]:
+            raw = float(manifest[key]["seconds"])
+            source = "manifest"
+        else:
+            raw = max(0.8, len(nospace) / cps)
+            source = "estimate"
+        dur = raw / rate
+        wins.append({"id": lid, "start": round(t, 3), "end": round(t + dur, 3), "text": script_text[lid]})
+        t += dur + pause_after[lid] / rate
+    return wins, source
+
+
+def window_scores(wins: list, curve: list, duration: float,
+                  window: float = 5.0, stride: float = 1.0) -> dict:
+    """Per-window highlight score: loudness peak + speech density + script
+    exclamations, 0-10. The brief ranks candidate shorts windows before the
+    analysis session applies judgment on boundaries and titles."""
+    rows = []
+    t0 = 0.0
+    while t0 + window <= duration + 1e-6:
+        t1 = t0 + window
+        peaks = [b["rms_db"] for b in curve
+                 if b["start"] >= t0 - 1e-6 and b["end"] <= t1 + 1e-6]
+        peak = max(peaks) if peaks else -99.0
+        density = (sum(1 for p in peaks if p > -45.0) / len(peaks)) if peaks else 0.0
+        excl = 0
+        lids: list = []
+        for w in wins:
+            if w["start"] < t1 and w["end"] > t0:
+                lids.append(w["id"])
+                excl += w["text"].count("!") + w["text"].count("?")
+        loud = max(0.0, min(1.0, (peak + 40.0) / 20.0))
+        exn = min(1.0, (excl / window) / 0.5)
+        score = round(10 * (0.4 * loud + 0.3 * density + 0.3 * exn), 2)
+        rows.append({
+            "start": round(t0, 2), "end": round(t1, 2), "score": score,
+            "loudness_peak_db": round(peak, 1), "speech_density": round(density, 2),
+            "exclamations": excl, "script_line_ids": lids,
+        })
+        t0 += stride
+    rows.sort(key=lambda r: -r["score"])
+    return {
+        "window_seconds": window, "stride": stride,
+        "weights": {"loudness_peak": 0.4, "speech_density": 0.3, "script_exclamations": 0.3},
+        "loudness_zero_db": -40.0, "speech_floor_db": -45.0,
+        "script_source": None,
+        "windows": rows,
+    }
 
 
 def _resolve_source(raw: str, plan_path: Path) -> Path:

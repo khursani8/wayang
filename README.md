@@ -27,6 +27,34 @@ Requires Node 24+ (rendering), uv, and ffmpeg/ffprobe. From a repo
 clone, prefix every command with `uv run tools/` instead
 (`uv run tools/wayang.py templates`).
 
+## Use with an AI agent
+
+Wayang was built to be driven by an agent. The repo ships `AGENTS.md`,
+a manual any coding agent (Claude Code, Cursor, ...) can follow — point
+your agent at the repo and give it one line:
+
+    Make a 30-second community announcement about our Merdeka sale in
+    Bahasa Malaysia. Voice: Momo. Render it and cut a vertical short
+    of the hook.
+
+The agent runs the loop itself:
+
+    wayang init community merdeka        # scaffold from the template
+    wayang check projects/merdeka        # plain-words list of what to fill
+    # agent edits projects/merdeka/project.yaml
+    wayang validate projects/merdeka     # strict gate
+    wayang render projects/merdeka       # voices, video, guards, lint
+    wayang shorts-sample projects/merdeka
+    wayang shorts-render projects/merdeka --rerender
+
+Keep instructions short and let the tool talk back. A good instruction
+names five things and nothing more: template, length, language, voice,
+message. `check` prints the gaps in plain words, the render log names
+the audio source, and the lint fails loudly if anything is missing from
+the final picture — so the agent self-corrects without you in the loop.
+Iterating is cheap: edit one line of the YAML and render again; cached
+voices and segment caching make small changes fast.
+
 ## Quickstart
 
     wayang templates
